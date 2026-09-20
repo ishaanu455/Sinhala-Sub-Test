@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>සිංහල Subtitle පරිවර්තකය</title>
+<title>Sinhala Subtitle Translator</title>
 <style>
+
 :root{
   color-scheme: light dark;
   --bg:#EDEFF8; --surface:#FFFFFF; --ink:#1B2036; --muted:#5C6380; --line:#D3D8EA;
@@ -93,87 +94,116 @@ details ul{margin:8px 0 0; padding-left:18px; max-height:180px; overflow:auto}
 .rows{margin-top:10px}
 .row{padding:14px 0 14px 12px; border-bottom:1px solid var(--line); border-left:3px solid transparent}
 .row.todo{border-left-color:var(--todo)}
+.row.bad{border-left-color:var(--err)}
+.review-tools{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:8px}
 .meta{font:.78rem/1.5 ui-monospace,Menlo,Consolas,monospace; color:var(--muted)}
 .en{color:var(--muted); font-size:.92rem; white-space:pre-line; margin:2px 0 6px}
 .row textarea{min-height:2.9em; field-sizing:content; resize:vertical}
 .legend{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.9rem}
 .legend::before{content:""; width:3px; height:18px; background:var(--todo); border-radius:2px}
 [hidden]{display:none !important}
+
+header{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px 24px}
+header > div:first-child{flex:1 1 320px; min-width:0}
+.lang{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; flex:none}
+.lang button{
+  min-height:40px; padding:0 16px; border:0; background:transparent; color:var(--ink);
+  font:inherit; font-weight:600; cursor:pointer;
+}
+.lang button + button{border-left:1px solid var(--line)}
+.lang button[aria-pressed=true]{background:var(--primary); color:var(--on-primary)}
+html[lang=en] body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Sinhala","Iskoola Pota","Nirmala UI",sans-serif;
+  line-height:1.6;
+}
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1>සිංහල Subtitle පරිවර්තකය</h1>
-    <p class="lead">English .srt file එකක් දාන්න. Timestamps එහෙමම තියාගෙන, කතා කරන සිංහලෙන් .srt එකක් download කරගන්න පුළුවන්.</p>
+    <div>
+      <h1 data-i18n="app.title">Sinhala Subtitle Translator</h1>
+      <p class="lead" data-i18n="app.lead"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language / භාෂාව">
+      <button type="button" data-lang="si" lang="si">සිංහල</button>
+      <button type="button" data-lang="en" lang="en">English</button>
+    </div>
   </header>
 
   <section class="step" id="s-key">
     <h2>Gemini API key</h2>
-    <p class="help"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> එකෙන් free key එකක් ගන්න. Key එක තියෙන්නේ ඔයාගේ browser එකේ විතරයි. Request යන්නේ කෙලින්ම Google ට, මේ site එකේ server එකකට නෙවෙයි.</p>
+    <p class="help" data-i18n-html="key.help"></p>
     <label for="apiKey">API key</label>
     <div class="inline">
       <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…">
-      <button class="btn" id="toggleKey" type="button">පෙන්නන්න</button>
+      <button class="btn" id="toggleKey" type="button"></button>
     </div>
-    <label class="check" for="remember"><input type="checkbox" id="remember"><span>මේ device එකේ key එක මතක තියාගන්න</span></label>
-    <div class="actions"><button class="btn" id="checkKey" type="button">Key එක check කරන්න</button></div>
+    <label class="check" for="remember"><input type="checkbox" id="remember"><span data-i18n="key.remember"></span></label>
+    <div class="actions"><button class="btn" id="checkKey" type="button" data-i18n="key.check"></button></div>
     <p class="msg" id="keyMsg" role="status" aria-live="polite"></p>
     <label for="model">Model</label>
-    <select id="model"><option value="">Key එක check කළාම models එනවා</option></select>
-    <p class="help" style="margin-top:8px">නමේ <b>flash-lite</b> තියෙන ඒවාට free quota වැඩියි. <b>pro</b> ඒවා free tier එකේ වැඩ නොකරන්න පුළුවන්.</p>
-    <p class="help" style="margin-top:10px">Free tier එකේදී ඔයා යවන text Google ට ඔවුන්ගේ products වැඩිදියුණු කරන්න use කරන්න පුළුවන්. Private content නම් ඒක මතක තියාගන්න.</p>
+    <select id="model"><option value="" data-i18n="model.placeholder"></option></select>
+    <p class="help" style="margin-top:8px" data-i18n-html="model.help"></p>
+    <p class="help" style="margin-top:10px" data-i18n="key.privacy"></p>
   </section>
 
   <section class="step" id="s-ctx">
-    <h2>Film එක ගැන</h2>
-    <p class="help">අවශ්‍ය නම් විතරයි. ඒත් මේවා දැම්මොත් "ඔයා / උඹ / තමුසේ" වගේ දේවල් හරියටම එනවා.</p>
-    <label for="ctxTitle">නම සහ genre</label>
-    <input id="ctxTitle" type="text" placeholder="උදා: Korean family comedy series">
-    <label for="ctxChars">Characters සහ ඒ අය අතර සම්බන්ධය</label>
-    <textarea id="ctxChars" placeholder="Minho — boss, 30 ගාණේ. Jisoo ට 'උඹ' කියනවා.&#10;Grandma — හැමෝටම 'පුතේ' කියනවා."></textarea>
-    <label for="ctxNotes">Tone සහ වෙනත් උපදෙස්</label>
-    <textarea id="ctxNotes" placeholder="උදා: street slang, joke වල timing තියාගන්න"></textarea>
-    <label class="check" for="mixEn"><input type="checkbox" id="mixEn" checked><span>කතාවේ පාවිච්චි වෙන English වචන (Sorry, OK, Boss…) English අකුරෙන්ම තියන්න</span></label>
+    <h2 data-i18n="ctx.h2"></h2>
+    <p class="help" data-i18n="ctx.help"></p>
+    <label for="ctxTitle" data-i18n="ctx.title.label"></label>
+    <input id="ctxTitle" type="text" data-i18n-ph="ctx.title.ph">
+    <label for="ctxChars" data-i18n="ctx.chars.label"></label>
+    <textarea id="ctxChars" data-i18n-ph="ctx.chars.ph"></textarea>
+    <label for="ctxNotes" data-i18n="ctx.notes.label"></label>
+    <textarea id="ctxNotes" data-i18n-ph="ctx.notes.ph"></textarea>
+    <label class="check" for="mixEn"><input type="checkbox" id="mixEn" checked><span data-i18n="ctx.mix"></span></label>
   </section>
 
   <section class="step" id="s-file">
-    <h2>SRT file එක</h2>
+    <h2 data-i18n="file.h2"></h2>
     <label class="drop" id="drop" for="fileInput">
       <input id="fileInput" type="file">
-      <strong id="fileName">SRT file එක මෙතනට drag කරන්න</strong>
-      <span id="fileInfo">නැත්නම් touch කරලා තෝරන්න</span>
+      <strong id="fileName"></strong>
+      <span id="fileInfo"></span>
     </label>
     <div class="grid2">
       <div>
-        <label for="chunkSize">එක request එකකට lines</label>
+        <label for="chunkSize" data-i18n="file.chunk"></label>
         <input id="chunkSize" type="number" min="10" max="300" value="100" inputmode="numeric">
       </div>
       <div>
-        <label for="gap">Requests අතර තත්පර</label>
+        <label for="gap" data-i18n="file.gap"></label>
         <input id="gap" type="number" min="0" max="120" value="4" inputmode="numeric">
       </div>
     </div>
-    <p class="help" style="margin-top:8px">Limit (429) නිතර එනවා නම් තත්පර ගාණ වැඩි කරන්න.</p>
+    <div class="grid2">
+      <div>
+        <label for="temp" data-i18n="file.temp"></label>
+        <input id="temp" type="number" min="0" max="1" step="0.1" value="0.3" inputmode="decimal">
+      </div>
+    </div>
+    <p class="help" style="margin-top:8px" data-i18n="file.help"></p>
   </section>
 
   <section class="step" id="s-run">
-    <h2>පරිවර්තනය</h2>
+    <h2 data-i18n="run.h2"></h2>
     <div class="actions">
-      <button class="btn primary" id="start" type="button" disabled>පරිවර්තනය පටන් ගන්න</button>
-      <button class="btn" id="stop" type="button" disabled>නවත්වන්න</button>
+      <button class="btn primary" id="start" type="button" disabled></button>
+      <button class="btn" id="stop" type="button" disabled data-i18n="run.stop"></button>
       <button class="btn" id="download" type="button" disabled>Download .srt</button>
     </div>
     <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="barWrap"><i id="bar"></i></div>
-    <div class="count"><span id="count">0 / 0 lines</span><button class="linkbtn" id="clear" type="button" disabled>Progress මකන්න</button></div>
+    <div class="count"><span id="count">0 / 0 lines</span><button class="linkbtn" id="clear" type="button" disabled data-i18n="run.clear"></button></div>
     <div class="now" id="now" hidden><small id="nowTime"></small><span id="nowText"></span></div>
     <p class="msg" id="status" role="status" aria-live="polite"></p>
-    <details><summary>Log එක බලන්න</summary><ul id="log"></ul></details>
+    <details><summary data-i18n="run.log"></summary><ul id="log"></ul></details>
   </section>
 
   <section class="step" id="s-review" hidden>
-    <h2>ප්‍රතිඵලය බලන්න, අවශ්‍ය නම් edit කරන්න</h2>
-    <p class="legend">කහ ඉරක් තියෙන lines තවම පරිවර්තනය වෙලා නෑ. Download කළාම ඒවා English එහෙමම යනවා.</p>
+    <h2 data-i18n="review.h2"></h2>
+    <p class="legend" data-i18n="review.legend"></p>
+    <div class="review-tools"><button class="btn" id="scan" type="button" data-i18n="review.scan"></button></div>
     <div class="rows" id="rows"></div>
   </section>
 </main>
@@ -260,6 +290,7 @@ function buildSystemPrompt(c) {
     '6. Never leave a line empty. Translate sound cues like [door slams] or (laughs) briefly, inside the same brackets.',
     '7. Swearing: match the intensity of the original. Do not sanitize it and do not exaggerate it.',
     '8. Keep HTML tags such as <i></i>, speaker dashes "-" and music symbols exactly as in the original.',
+    '9. Write ONLY in Sinhala script, English (Latin) letters, digits and normal punctuation. NEVER output characters from any other script (no Tamil, Bengali, Hindi, Arabic, Burmese, Thai, Korean, Chinese, Japanese).',
     '',
     'FORMAT RULES (very important):',
     '- Each input line looks like: number|English text   (" / " marks a line break inside one subtitle).',
@@ -290,6 +321,12 @@ function buildUserPrompt(entries, tr, ids) {
   return s;
 }
 
+// True if the text contains letters from scripts that should never appear in Sinhala subtitles
+// (Tamil, Bengali, Arabic, Myanmar, Thai, Korean, CJK ...). Sinhala (0D80-0DFF) and Latin are allowed.
+function hasForeignScript(t) {
+  return /[\u0370-\u0D7F\u0E00-\u1DFF\u1F00-\u1FFF\u2E80-\uD7FF\uF900-\uFDFF\uFE70-\uFEFF]/.test(String(t || ''));
+}
+
 function chunkArray(arr, n) {
   const out = [];
   for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
@@ -303,9 +340,182 @@ function hashStr(s) {
 }
 // ==CORE END==
 
+/* ---------- translations (UI language). The AI prompt above always stays in English. ---------- */
+const I18N = {
+  si: {
+    'app.title': 'සිංහල Subtitle පරිවර්තකය',
+    'app.lead': 'English .srt file එකක් දාන්න. Timestamps එහෙමම තියාගෙන, කතා කරන සිංහලෙන් .srt එකක් download කරගන්න පුළුවන්.',
+    'key.help': '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> එකෙන් free key එකක් ගන්න. Key එක තියෙන්නේ ඔයාගේ browser එකේ විතරයි. Request යන්නේ කෙලින්ම Google ට, මේ site එකේ server එකකට නෙවෙයි.',
+    'key.show': 'පෙන්නන්න',
+    'key.hide': 'සඟවන්න',
+    'key.remember': 'මේ device එකේ key එක මතක තියාගන්න',
+    'key.check': 'Key එක check කරන්න',
+    'key.privacy': 'Free tier එකේදී ඔයා යවන text Google ට ඔවුන්ගේ products වැඩිදියුණු කරන්න use කරන්න පුළුවන්. Private content නම් ඒක මතක තියාගන්න.',
+    'key.needKey': 'Key එක මුලින් paste කරන්න.',
+    'key.checking': 'Check කරනවා…',
+    'key.nomodels': 'Key එක වැඩ, ඒත් generateContent support කරන model එකක් හම්බුණේ නෑ.',
+    'key.ok': '✓ Key එක හරි. Models {n}ක් හම්බුණා. පහළ list එකෙන් model එකක් තෝරන්න.',
+    'key.bad': 'Key එක වැරදියි, නැත්නම් මේ key එකට API access නෑ.',
+    'key.fail': 'Check කරන්න බෑ: {msg}',
+    'model.placeholder': 'Key එක check කළාම models එනවා',
+    'model.help': 'නමේ <b>flash-lite</b> තියෙන ඒවාට free quota වැඩියි. <b>pro</b> ඒවා free tier එකේ වැඩ නොකරන්න පුළුවන්.',
+    'tag.lite': '   (lite: free quota වැඩියි)',
+    'tag.flash': '   (free quota අඩුයි)',
+    'tag.pro': '   (free tier එකේ නැති වෙන්න පුළුවන්)',
+    'ctx.h2': 'Film එක ගැන',
+    'ctx.help': 'අවශ්‍ය නම් විතරයි. ඒත් මේවා දැම්මොත් "ඔයා / උඹ / තමුසේ" වගේ දේවල් හරියටම එනවා.',
+    'ctx.title.label': 'නම සහ genre',
+    'ctx.title.ph': 'උදා: Korean family comedy series',
+    'ctx.chars.label': 'Characters සහ ඒ අය අතර සම්බන්ධය',
+    'ctx.chars.ph': "Minho — boss, 30 ගාණේ. Jisoo ට 'උඹ' කියනවා.\nGrandma — හැමෝටම 'පුතේ' කියනවා.",
+    'ctx.notes.label': 'Tone සහ වෙනත් උපදෙස්',
+    'ctx.notes.ph': 'උදා: street slang, joke වල timing තියාගන්න',
+    'ctx.mix': 'කතාවේ පාවිච්චි වෙන English වචන (Sorry, OK, Boss…) English අකුරෙන්ම තියන්න',
+    'file.h2': 'SRT file එක',
+    'file.drop.title': 'SRT file එක මෙතනට drag කරන්න',
+    'file.drop.hint': 'නැත්නම් touch කරලා තෝරන්න',
+    'file.nolines': 'මේකේ subtitle lines හම්බුණේ නෑ. .srt file එකක්ද බලන්න.',
+    'file.readfail': 'File එක කියවන්න බෑ.',
+    'file.info': 'Subtitles {n}ක්',
+    'file.info.done': ' · පරිවර්තනය වුණු lines {d}ක්',
+    'file.info.bad': ' · වැරදි අකුරු තියෙන lines {b}ක් (පහළින් "හොයන්න" ඔබන්න)',
+    'file.chunk': 'එක request එකකට lines',
+    'file.gap': 'Requests අතර තත්පර',
+    'file.temp': 'Temperature (0 සිට 1)',
+    'file.help': 'Limit (429) නිතර එනවා නම් තත්පර ගාණ වැඩි කරන්න. අමුතු අකුරු (වෙනත් භාෂා) එනවා නම් Temperature එක අඩු කරන්න (0.1 ත් 0.3 ත් අතර).',
+    'run.h2': 'පරිවර්තනය',
+    'run.start.new': 'පරිවර්තනය පටන් ගන්න',
+    'run.start.resume': 'ඉතුරු ටික පරිවර්තනය කරන්න',
+    'run.start.again': 'ආයේ පරිවර්තනය කරන්න',
+    'run.stop': 'නවත්වන්න',
+    'run.clear': 'Progress මකන්න',
+    'run.log': 'Log එක බලන්න',
+    'run.needKey': 'API key එක මුලින් දාන්න.',
+    'run.needFile': 'SRT file එකක් තෝරන්න.',
+    'run.nomodel': 'Model එකක් තෝරගන්න බැරි වුණා.',
+    'run.alldone': 'හැම line එකක්ම පරිවර්තනය වෙලා. Download කරන්න පුළුවන්.',
+    'run.finished': '✓ හැම line එකක්ම පරිවර්තනය වුණා. Download කරන්න.',
+    'run.left': 'Lines {n}ක් පරිවර්තනය වුණේ නෑ (කහ ඉරින් පෙන්නලා තියෙනවා). "ඉතුරු ටික" ආයේ ඔබන්න, නැත්නම් අතින් ලියන්න.',
+    'run.stopped': 'නවත්තලා. Progress save වෙලා තියෙනවා.',
+    'run.daily': 'අද දවසේ free quota එක ඉවර වෙලා. Progress save වෙලා තියෙනවා. Quota reset වුණාම (ඊළඟ දවසේ) ආයේ "ඉතුරු ටික" ඔබන්න.',
+    'run.noquota': 'මේ model එකට free tier එකේ quota එකක් නෑ (limit 0). Model එක වෙනස් කරන්න. උදා: නමේ "flash" හෝ "flash-lite" තියෙන වෙනත් එකක්. Log එකේ Google ගේ පණිවිඩය තියෙනවා.',
+    'run.model404': 'Model එක හම්බුණේ නෑ. Key එක check කරලා වෙනත් model එකක් තෝරන්න.',
+    'run.fatal': 'Key එක වැරදියි වගේ, නැත්නම් access නෑ: {msg}',
+    'run.error': 'Error එකක්: {msg} (Progress save වෙලා තියෙනවා)',
+    'run.progress': 'පරිවර්තනය වෙමින්… (lines {a} සිට {b} දක්වා)',
+    'run.limitwait': 'Limit ආවා. තත්පර {s}කින් ආයේ උත්සාහ කරනවා…',
+    'run.neterr': 'Connection/server error. තත්පර {s}කින් ආයේ උත්සාහ කරනවා…',
+    'run.retriesfail': 'ආයේ ආයේ උත්සාහ කළත් වැඩ කළේ නෑ. Log එක බලන්න, නැත්නම් තත්පර ගාණ වැඩි කරලා / model එක මාරු කරලා බලන්න.',
+    'log.429': 'Limit (429) ආවා. තත්පර {s}ක් රැඳී ඉන්නවා.',
+    'log.err': 'Error: {msg}. තත්පර {s}කින් ආයේ.',
+    'log.foreign': 'Lines {n}ක වෙනත් භාෂාවල අකුරු මිශ්‍ර වෙලා තිබුණා. ඒවා ආයේ උත්සාහ කරනවා (temperature අඩු කරලා).',
+    'log.missing': 'Lines {n}ක් ඇවිත් නෑ{why}. ඒවා පොඩි කෑලි වලින් ආයේ ඉල්ලනවා.',
+    'log.failed': 'Lines {n}ක් පරිවර්තනය කරගන්න බැරි වුණා.',
+    'dl.confirm': 'Lines {n}ක් තාම පරිවර්තනය වෙලා නෑ. ඒවා English එහෙමම යනවා. Download කරන්නද?',
+    'clear.confirm': 'මේ file එකේ save කරලා තියෙන පරිවර්තන ඔක්කොම මකන්නද?',
+    'review.h2': 'ප්‍රතිඵලය බලන්න, අවශ්‍ය නම් edit කරන්න',
+    'review.legend': 'කහ ඉරක් තියෙන lines තවම පරිවර්තනය වෙලා නෑ. Download කළාම ඒවා English එහෙමම යනවා. රතු ඉරක් තියෙන lines වල වෙනත් භාෂාවල අකුරු තියෙනවා.',
+    'review.scan': 'වැරදි අකුරු තියෙන lines හොයන්න',
+    'scan.none': '✓ වෙනත් භාෂාවල අකුරු තියෙන lines නෑ.',
+    'scan.confirm': 'වෙනත් භාෂාවල අකුරු මිශ්‍ර වෙලා තියෙන lines {n}ක් හම්බුණා. ඒවා ඉවත් කරලා ආයේ පරිවර්තනය කරන්න සූදානම් කරන්නද? (අනිත් lines වලට කිසිවක් වෙන්නේ නෑ)',
+    'scan.done': 'Lines {n}ක් ඉවත් කළා. දැන් "ඉතුරු ටික පරිවර්තනය කරන්න" ඔබන්න. ඒ lines විතරක් ආයේ යවනවා.',
+    'row.ph': 'තවම පරිවර්තනය වෙලා නෑ',
+    'row.aria': 'Line {id} සිංහල'
+  },
+  en: {
+    'app.title': 'Sinhala Subtitle Translator',
+    'app.lead': 'Upload an English .srt file and get a Sinhala .srt back, in natural spoken Sinhala, with the original timestamps.',
+    'key.help': 'Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. The key stays in your browser only. Requests go straight to Google, never through a server of this site.',
+    'key.show': 'Show',
+    'key.hide': 'Hide',
+    'key.remember': 'Remember the key on this device',
+    'key.check': 'Check key',
+    'key.privacy': 'On the free tier, Google may use the text you send to improve its products. Keep that in mind for private content.',
+    'key.needKey': 'Paste your key first.',
+    'key.checking': 'Checking…',
+    'key.nomodels': 'The key works, but no model that supports generateContent was found.',
+    'key.ok': '✓ The key is valid. Found {n} models. Pick one from the list below.',
+    'key.bad': 'The key is invalid, or it has no API access.',
+    'key.fail': 'Could not check the key: {msg}',
+    'model.placeholder': 'Models appear after you check the key',
+    'model.help': 'Models with <b>flash-lite</b> in the name have more free quota. <b>pro</b> models may not work on the free tier.',
+    'tag.lite': '   (lite: more free quota)',
+    'tag.flash': '   (less free quota)',
+    'tag.pro': '   (may not be on the free tier)',
+    'ctx.h2': 'About the film',
+    'ctx.help': 'Optional. But if you fill these in, the Sinhala forms of "you" (ඔයා / උඹ / තමුසේ) come out right.',
+    'ctx.title.label': 'Title and genre',
+    'ctx.title.ph': 'e.g. Korean family comedy series',
+    'ctx.chars.label': 'Characters and how they relate',
+    'ctx.chars.ph': 'Minho: the boss, around 30. Calls Jisoo "උඹ" (blunt, informal).\nGrandma: calls everyone "පුතේ" (son).',
+    'ctx.notes.label': 'Tone and other notes',
+    'ctx.notes.ph': 'e.g. street slang, keep the timing of the jokes',
+    'ctx.mix': 'Keep English words people really use (Sorry, OK, Boss…) in English letters',
+    'file.h2': 'SRT file',
+    'file.drop.title': 'Drag the SRT file here',
+    'file.drop.hint': 'or tap to choose one',
+    'file.nolines': 'No subtitle lines found. Is this an .srt file?',
+    'file.readfail': 'Could not read the file.',
+    'file.info': '{n} subtitles',
+    'file.info.done': ' · {d} lines translated',
+    'file.info.bad': ' · {b} lines with wrong characters (press "Find" below)',
+    'file.chunk': 'Lines per request',
+    'file.gap': 'Seconds between requests',
+    'file.temp': 'Temperature (0 to 1)',
+    'file.help': 'If you hit the limit (429) often, raise the seconds between requests. If characters from other languages show up, lower the temperature (0.1 to 0.3).',
+    'run.h2': 'Translate',
+    'run.start.new': 'Start translating',
+    'run.start.resume': 'Translate the remaining lines',
+    'run.start.again': 'Translate again',
+    'run.stop': 'Stop',
+    'run.clear': 'Clear progress',
+    'run.log': 'Show log',
+    'run.needKey': 'Enter your API key first.',
+    'run.needFile': 'Choose an SRT file first.',
+    'run.nomodel': 'Could not pick a model.',
+    'run.alldone': 'Every line is already translated. You can download it.',
+    'run.finished': '✓ Every line is translated. Download it.',
+    'run.left': '{n} lines were not translated (marked with a yellow bar). Press "Translate the remaining lines" again, or type them yourself.',
+    'run.stopped': 'Stopped. Your progress is saved.',
+    'run.daily': "Today's free quota is used up. Your progress is saved. When the quota resets (usually the next day), press \"Translate the remaining lines\" again.",
+    'run.noquota': 'This model has no quota on the free tier (limit 0). Pick another model, for example one with "flash" or "flash-lite" in its name. Google\'s message is in the log.',
+    'run.model404': 'Model not found. Check the key and pick another model.',
+    'run.fatal': 'The key looks invalid or has no access: {msg}',
+    'run.error': 'Error: {msg} (your progress is saved)',
+    'run.progress': 'Translating… (lines {a} to {b})',
+    'run.limitwait': 'Rate limit hit. Trying again in {s}s…',
+    'run.neterr': 'Connection or server error. Trying again in {s}s…',
+    'run.retriesfail': 'Still failing after several retries. Check the log, raise the seconds between requests, or switch model.',
+    'log.429': 'Rate limit (429). Waiting {s}s.',
+    'log.err': 'Error: {msg}. Retrying in {s}s.',
+    'log.foreign': '{n} lines had characters from other scripts. Retrying them with a lower temperature.',
+    'log.missing': '{n} lines were missing{why}. Asking for them again in smaller pieces.',
+    'log.failed': 'Could not translate {n} lines.',
+    'dl.confirm': '{n} lines are still not translated and will stay in English. Download anyway?',
+    'clear.confirm': 'Delete all saved translations for this file?',
+    'review.h2': 'Review and edit the result',
+    'review.legend': 'Lines with a yellow bar are not translated yet; they stay in English when you download. Lines with a red bar contain characters from other scripts.',
+    'review.scan': 'Find lines with wrong characters',
+    'scan.none': '✓ No lines with characters from other scripts.',
+    'scan.confirm': 'Found {n} lines mixed with characters from other scripts. Remove them so they can be translated again? (Other lines are not touched.)',
+    'scan.done': 'Removed {n} lines. Now press "Translate the remaining lines". Only those lines are sent again.',
+    'row.ph': 'Not translated yet',
+    'row.aria': 'Line {id} in Sinhala'
+  }
+};
+let LANG = 'si';
+function t(key, vars) {
+  let s = (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
+  if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
+  return s;
+}
+
 const $ = id => document.getElementById(id);
 const API = 'https://generativelanguage.googleapis.com/v1beta';
-const S = { entries: [], tr: {}, fileName: '', fp: '', running: false, stop: false, abort: null, rows: [], lastReq: 0, saveTimer: null };
+const S = {
+  entries: [], tr: {}, fileName: '', badFile: null, fp: '', running: false, stop: false, abort: null,
+  rows: [], lastReq: 0, saveTimer: null, modelNames: [], st: null, km: null
+};
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
@@ -314,12 +524,14 @@ const store = {
 };
 
 /* ---------- settings ---------- */
-const FIELDS = ['ctxTitle', 'ctxChars', 'ctxNotes', 'chunkSize', 'gap'];
+const FIELDS = ['ctxTitle', 'ctxChars', 'ctxNotes', 'chunkSize', 'gap', 'temp'];
 function loadSettings() {
   FIELDS.forEach(f => { const v = store.get('srt2si:' + f, null); if (v !== null) $(f).value = v; });
   $('mixEn').checked = store.get('srt2si:mixEn', '1') === '1';
   const k = store.get('srt2si:key', '');
   if (k) { $('apiKey').value = k; $('remember').checked = true; }
+  const l = store.get('srt2si:lang', 'si');
+  LANG = (l === 'en') ? 'en' : 'si';
 }
 function saveSettings() {
   FIELDS.forEach(f => store.set('srt2si:' + f, $(f).value));
@@ -332,9 +544,55 @@ function getCtx() {
   return { title: $('ctxTitle').value.trim(), chars: $('ctxChars').value.trim(), notes: $('ctxNotes').value.trim(), mixEnglish: $('mixEn').checked };
 }
 
+/* ---------- language ---------- */
+function renderStatus() {
+  const s = $('status');
+  s.textContent = S.st ? t(S.st.key, S.st.vars) : '';
+  s.dataset.kind = (S.st && S.st.kind) || '';
+}
+function renderKeyMsg() {
+  const s = $('keyMsg');
+  s.textContent = S.km ? t(S.km.key, S.km.vars) : '';
+  s.dataset.kind = (S.km && S.km.kind) || '';
+}
+function setStatus(key, vars, kind) { S.st = key ? { key, vars, kind } : null; renderStatus(); }
+function setKeyMsg(key, vars, kind) { S.km = key ? { key, vars, kind } : null; renderKeyMsg(); }
+
+function modelTag(n) {
+  return /lite/.test(n) ? t('tag.lite') : /flash/.test(n) ? t('tag.flash') : /pro/.test(n) ? t('tag.pro') : '';
+}
+function renderModelOptions() {
+  if (!S.modelNames.length) return;
+  const sel = $('model'), cur = sel.value;
+  sel.textContent = '';
+  S.modelNames.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n + modelTag(n); sel.appendChild(o); });
+  if (S.modelNames.indexOf(cur) !== -1) sel.value = cur;
+}
+function renderFile() {
+  if (S.badFile) { $('fileName').textContent = S.badFile; $('fileInfo').textContent = t('file.nolines'); return; }
+  if (!S.entries.length) { $('fileName').textContent = t('file.drop.title'); $('fileInfo').textContent = t('file.drop.hint'); return; }
+  const d = doneCount(), b = badIds().length;
+  $('fileName').textContent = S.fileName;
+  $('fileInfo').textContent = t('file.info', { n: S.entries.length }) + (d ? t('file.info.done', { d: d }) : '') + (b ? t('file.info.bad', { b: b }) : '');
+}
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.title = t('app.title');
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));
+  $('toggleKey').textContent = t($('apiKey').type === 'password' ? 'key.show' : 'key.hide');
+  S.rows.forEach((r, i) => { r.ta.placeholder = t('row.ph'); r.ta.setAttribute('aria-label', t('row.aria', { id: i + 1 })); });
+  renderModelOptions(); renderStatus(); renderKeyMsg(); updateProgress();
+}
+function setLang(l) {
+  LANG = l;
+  store.set('srt2si:lang', l);
+  applyLang();
+}
+
 /* ---------- small UI helpers ---------- */
-function setStatus(msg, kind) { const s = $('status'); s.textContent = msg; s.dataset.kind = kind || ''; }
-function setKeyMsg(msg, kind) { const s = $('keyMsg'); s.textContent = msg; s.dataset.kind = kind || ''; }
 function log(msg) {
   const li = document.createElement('li');
   li.textContent = new Date().toLocaleTimeString() + '  ' + msg;
@@ -343,10 +601,10 @@ function log(msg) {
   ul.scrollTop = ul.scrollHeight;
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-async function waitSeconds(sec, label) {
+async function waitSeconds(sec, key) {
   for (let s = Math.ceil(sec); s > 0; s--) {
     if (S.stop) throw new Error('stopped');
-    if (label) setStatus(label.replace('{s}', s));
+    if (key) setStatus(key, { s: s });
     await sleep(1000);
   }
 }
@@ -364,17 +622,32 @@ function todoIds() {
   S.entries.forEach((e, i) => { if (e.lines.length && !S.tr[i + 1]) r.push(i + 1); });
   return r;
 }
+function badIds() {
+  const r = [];
+  S.entries.forEach((e, i) => { if (S.tr[i + 1] && hasForeignScript(S.tr[i + 1])) r.push(i + 1); });
+  return r;
+}
+function scanBad() {
+  const bad = badIds();
+  if (!bad.length) { setStatus('scan.none', null, 'ok'); return; }
+  if (!confirm(t('scan.confirm', { n: bad.length }))) return;
+  bad.forEach(id => { delete S.tr[id]; setRow(id); });
+  save(); updateProgress();
+  setStatus('scan.done', { n: bad.length }, 'ok');
+}
 function updateProgress() {
-  const t = translatable(), d = doneCount();
-  const pct = t ? Math.round(d / t * 100) : 0;
+  const t0 = translatable(), d = doneCount();
+  const pct = t0 ? Math.round(d / t0 * 100) : 0;
   $('bar').style.width = pct + '%';
   $('barWrap').setAttribute('aria-valuenow', pct);
-  $('count').textContent = d + ' / ' + t + ' lines';
+  $('count').textContent = d + ' / ' + t0 + ' lines';
   const has = S.entries.length > 0;
   $('start').disabled = !has || S.running;
   $('download').disabled = !has;
   $('clear').disabled = !has || S.running;
-  $('start').textContent = d === 0 ? 'පරිවර්තනය පටන් ගන්න' : (d < t ? 'ඉතුරු ටික පරිවර්තනය කරන්න' : 'ආයේ පරිවර්තනය කරන්න');
+  $('scan').disabled = !has || S.running;
+  $('start').textContent = t(d === 0 ? 'run.start.new' : (d < t0 ? 'run.start.resume' : 'run.start.again'));
+  renderFile();
 }
 function setBusy(b) {
   S.running = b;
@@ -386,6 +659,7 @@ function setRow(id) {
   if (!r) return;
   r.ta.value = S.tr[id] || '';
   r.row.classList.toggle('todo', !S.tr[id] && S.entries[id - 1].lines.length > 0);
+  r.row.classList.toggle('bad', !!S.tr[id] && hasForeignScript(S.tr[id]));
 }
 function scheduleSave() {
   clearTimeout(S.saveTimer);
@@ -406,14 +680,17 @@ function renderRows() {
     const en = document.createElement('div'); en.className = 'en'; en.textContent = e.lines.join('\n');
     row.appendChild(meta); row.appendChild(en);
     const ta = document.createElement('textarea');
-    ta.rows = 2; ta.lang = 'si'; ta.setAttribute('aria-label', 'Line ' + id + ' සිංහල');
+    ta.rows = 2; ta.lang = 'si';
+    ta.setAttribute('aria-label', t('row.aria', { id: id }));
     if (e.lines.length) {
       ta.value = S.tr[id] || '';
-      ta.placeholder = 'තවම පරිවර්තනය වෙලා නෑ';
+      ta.placeholder = t('row.ph');
       if (!S.tr[id]) row.classList.add('todo');
+      if (S.tr[id] && hasForeignScript(S.tr[id])) row.classList.add('bad');
       ta.addEventListener('input', () => {
         if (ta.value.trim()) S.tr[id] = ta.value; else delete S.tr[id];
         row.classList.toggle('todo', !S.tr[id]);
+        row.classList.toggle('bad', !!S.tr[id] && hasForeignScript(S.tr[id]));
         scheduleSave(); updateProgress();
       });
       row.appendChild(ta);
@@ -436,57 +713,50 @@ function showNow(id) {
 async function handleFile(file) {
   if (!file || S.running) return;
   let text;
-  try { text = await file.text(); } catch (e) { setStatus('File එක කියවන්න බෑ.', 'err'); return; }
+  try { text = await file.text(); } catch (e) { setStatus('file.readfail', null, 'err'); return; }
   const entries = parseSRT(text);
-  if (!entries.length) {
-    $('fileName').textContent = file.name;
-    $('fileInfo').textContent = 'මේකේ subtitle lines හම්බුණේ නෑ. .srt file එකක්ද බලන්න.';
-    return;
-  }
+  if (!entries.length) { S.badFile = file.name; renderFile(); return; }
+  S.badFile = null;
   S.entries = entries; S.fileName = file.name;
   S.fp = 'srt2si:p:' + hashStr(file.name + '|' + entries.length + '|' + entries.map(e => e.lines.join('/')).join('\n'));
   try { S.tr = JSON.parse(store.get(S.fp, '{}')) || {}; } catch (e) { S.tr = {}; }
-  $('fileName').textContent = file.name;
-  const d = doneCount();
-  $('fileInfo').textContent = 'Subtitles ' + entries.length + 'ක්' + (d ? ' · කලින් පරිවර්තනය කරපු lines ' + d + 'ක් තියෙනවා' : '');
   $('now').hidden = true;
-  setStatus('');
+  setStatus(null);
   renderRows(); updateProgress();
 }
 
 /* ---------- Gemini ---------- */
 async function loadModels() {
   const key = $('apiKey').value.trim();
-  if (!key) { setKeyMsg('Key එක මුලින් paste කරන්න.', 'err'); return false; }
-  setKeyMsg('Check කරනවා…');
+  if (!key) { setKeyMsg('key.needKey', null, 'err'); return false; }
+  setKeyMsg('key.checking');
   try {
     const res = await fetch(API + '/models?pageSize=1000', { headers: { 'x-goog-api-key': key } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { const e = new Error((data.error && data.error.message) || res.statusText); e.status = res.status; throw e; }
     const score = n => (/lite/.test(n) ? 0 : /flash/.test(n) ? 1 : /pro/.test(n) ? 3 : 2) + (/preview|exp/.test(n) ? 0.5 : 0);
-    const tag = n => /lite/.test(n) ? '   (lite: free quota වැඩියි)' : /flash/.test(n) ? '   (free quota අඩුයි)' : /pro/.test(n) ? '   (free tier එකේ නැති වෙන්න පුළුවන්)' : '';
     const names = (data.models || [])
       .filter(m => (m.supportedGenerationMethods || []).indexOf('generateContent') !== -1)
       .map(m => m.name.replace(/^models\//, ''))
       .filter(n => !/image|tts|live|audio|embedding|aqa|robotics|computer|imagen|veo|learnlm/i.test(n))
       .sort((a, b) => score(a) - score(b) || b.localeCompare(a));
-    const sel = $('model');
-    const prev = sel.value || store.get('srt2si:model', '');
-    sel.textContent = '';
-    names.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n + tag(n); sel.appendChild(o); });
-    if (!names.length) { setKeyMsg('Key එක වැඩ, ඒත් generateContent support කරන model එකක් හම්බුණේ නෑ.', 'err'); return false; }
-    sel.value = names.indexOf(prev) !== -1 ? prev : names[0];
-    setKeyMsg('✓ Key එක හරි. Models ' + names.length + 'ක් හම්බුණා. පහළ list එකෙන් model එකක් තෝරන්න.', 'ok');
+    if (!names.length) { setKeyMsg('key.nomodels', null, 'err'); return false; }
+    const prev = $('model').value || store.get('srt2si:model', '');
+    S.modelNames = names;
+    $('model').textContent = '';
+    renderModelOptions();
+    $('model').value = names.indexOf(prev) !== -1 ? prev : names[0];
+    setKeyMsg('key.ok', { n: names.length }, 'ok');
     saveSettings();
     return true;
   } catch (e) {
-    if (e.status === 400 || e.status === 403) setKeyMsg('Key එක වැරදියි, නැත්නම් මේ key එකට API access නෑ.', 'err');
-    else setKeyMsg('Check කරන්න බෑ: ' + e.message, 'err');
+    if (e.status === 400 || e.status === 403) setKeyMsg('key.bad', null, 'err');
+    else setKeyMsg('key.fail', { msg: e.message }, 'err');
     return false;
   }
 }
 
-async function callGemini(model, system, user) {
+async function callGemini(model, system, user, temperature) {
   S.lastReq = Date.now();
   S.abort = new AbortController();
   const res = await fetch(API + '/models/' + encodeURIComponent(model) + ':generateContent', {
@@ -495,7 +765,7 @@ async function callGemini(model, system, user) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig: { temperature: 0.6 },
+      generationConfig: { temperature: temperature },
       safetySettings: ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']
         .map(c => ({ category: c, threshold: 'BLOCK_NONE' }))
     }),
@@ -529,35 +799,41 @@ async function requestWithRetry(fn) {
         if (/"quotaValue":"0"/.test(raw) || /limit:\s*0\b/.test(String(e.message))) { e.noQuota = true; throw e; }
         if (/PerDay/.test(raw) && !/PerMinute/.test(raw)) { e.daily = true; throw e; }
         wait = retryDelaySeconds(e.data) || Math.min(60, 15 * (attempt + 1));
-        log('Limit (429) ආවා. තත්පර ' + wait + 'ක් රැඳී ඉන්නවා.');
-        await waitSeconds(wait + 1, 'Limit ආවා. තත්පර {s}කින් ආයේ උත්සාහ කරනවා…');
+        log(t('log.429', { s: wait }));
+        await waitSeconds(wait + 1, 'run.limitwait');
       } else if (e.status >= 500 || e.name === 'TypeError') {
         wait = 5 * (attempt + 1);
-        log('Error: ' + e.message + '. තත්පර ' + wait + 'කින් ආයේ.');
-        await waitSeconds(wait, 'Connection/server error. තත්පර {s}කින් ආයේ උත්සාහ කරනවා…');
+        log(t('log.err', { msg: e.message, s: wait }));
+        await waitSeconds(wait, 'run.neterr');
       } else {
         throw e;
       }
     }
   }
-  throw new Error('ආයේ ආයේ උත්සාහ කළත් වැඩ කළේ නෑ. Log එක බලන්න, නැත්නම් තත්පර ගාණ වැඩි කරලා / model එක මාරු කරලා බලන්න.');
+  throw new Error(t('run.retriesfail'));
 }
 
-async function translatePart(ids) {
+async function translatePart(ids, attempt) {
   await gapWait();
   if (S.stop) throw new Error('stopped');
   const model = $('model').value.trim();
   const sys = buildSystemPrompt(getCtx());
   const usr = buildUserPrompt(S.entries, S.tr, ids);
-  setStatus('පරිවර්තනය වෙමින්… (lines ' + ids[0] + ' සිට ' + ids[ids.length - 1] + ' දක්වා)');
-  const r = await requestWithRetry(() => callGemini(model, sys, usr));
+  setStatus('run.progress', { a: ids[0], b: ids[ids.length - 1] });
+  const base = Math.min(1, Math.max(0, isNaN(parseFloat($('temp').value)) ? 0.3 : parseFloat($('temp').value)));
+  const temperature = attempt > 0 ? Math.min(base, 0.1) : base;
+  const r = await requestWithRetry(() => callGemini(model, sys, usr, temperature));
   if (r.blocked) log('Blocked: ' + r.blocked);
   const got = parseModelOutput(r.text, ids);
-  let n = 0, last = 0;
-  for (const k in got) { S.tr[k] = got[k]; setRow(+k); n++; last = Math.max(last, +k); }
+  let n = 0, last = 0, foreign = 0;
+  for (const k in got) {
+    if (hasForeignScript(got[k])) { foreign++; continue; } // garbled output: leave it untranslated so it is retried
+    S.tr[k] = got[k]; setRow(+k); n++; last = Math.max(last, +k);
+  }
+  if (foreign) log(t('log.foreign', { n: foreign }));
   if (last) showNow(last);
   save(); updateProgress();
-  if (n < ids.length) log('Lines ' + (ids.length - n) + 'ක් ඇවිත් නෑ' + (r.finish && r.finish !== 'STOP' ? ' (' + r.finish + ')' : '') + '. ඒවා පොඩි කෑලි වලින් ආයේ ඉල්ලනවා.');
+  if (n < ids.length) log(t('log.missing', { n: ids.length - n, why: (r.finish && r.finish !== 'STOP') ? ' (' + r.finish + ')' : '' }));
   return n;
 }
 
@@ -565,37 +841,37 @@ async function translateBatch(ids) {
   let pending = ids.slice();
   for (let attempt = 0; attempt < 4 && pending.length; attempt++) {
     const size = attempt === 0 ? pending.length : Math.max(8, Math.ceil(pending.length / (attempt + 1)));
-    for (const part of chunkArray(pending, size)) await translatePart(part);
+    for (const part of chunkArray(pending, size)) await translatePart(part, attempt);
     pending = pending.filter(id => !S.tr[id]);
   }
-  if (pending.length) log('Lines ' + pending.length + 'ක් පරිවර්තනය කරගන්න බැරි වුණා.');
+  if (pending.length) log(t('log.failed', { n: pending.length }));
 }
 
 async function start() {
   if (S.running) return;
-  if (!$('apiKey').value.trim()) { setStatus('API key එක මුලින් දාන්න.', 'err'); $('apiKey').focus(); return; }
-  if (!S.entries.length) { setStatus('SRT file එකක් තෝරන්න.', 'err'); return; }
+  if (!$('apiKey').value.trim()) { setStatus('run.needKey', null, 'err'); $('apiKey').focus(); return; }
+  if (!S.entries.length) { setStatus('run.needFile', null, 'err'); return; }
   saveSettings();
   if (!$('model').value.trim()) {
     const ok = await loadModels();
-    if (!ok || !$('model').value.trim()) { setStatus('Model එකක් තෝරගන්න බැරි වුණා.', 'err'); return; }
+    if (!ok || !$('model').value.trim()) { setStatus('run.nomodel', null, 'err'); return; }
   }
   const todo = todoIds();
-  if (!todo.length) { setStatus('හැම line එකක්ම පරිවර්තනය වෙලා. Download කරන්න පුළුවන්.', 'ok'); return; }
+  if (!todo.length) { setStatus('run.alldone', null, 'ok'); return; }
   const size = Math.min(300, Math.max(10, parseInt($('chunkSize').value, 10) || 100));
   S.stop = false; setBusy(true);
   try {
     for (const batch of chunkArray(todo, size)) await translateBatch(batch);
     const left = todoIds().length;
-    if (!left) setStatus('✓ හැම line එකක්ම පරිවර්තනය වුණා. Download කරන්න.', 'ok');
-    else setStatus('Lines ' + left + 'ක් පරිවර්තනය වුණේ නෑ (කහ ඉරින් පෙන්නලා තියෙනවා). "ඉතුරු ටික" ආයේ ඔබන්න, නැත්නම් අතින් ලියන්න.', 'err');
+    if (!left) setStatus('run.finished', null, 'ok');
+    else setStatus('run.left', { n: left }, 'err');
   } catch (e) {
-    if (e.message === 'stopped') setStatus('නවත්තලා. Progress save වෙලා තියෙනවා.');
-    else if (e.noQuota) setStatus('මේ model එකට free tier එකේ quota එකක් නෑ (limit 0). Model එක වෙනස් කරන්න. උදා: නමේ "flash" හෝ "flash-lite" තියෙන වෙනත් එකක්. Log එකේ Google ගේ පණිවිඩය තියෙනවා.', 'err');
-    else if (e.daily) setStatus('අද දවසේ free quota එක ඉවර වෙලා. Progress save වෙලා තියෙනවා. Quota reset වුණාම (ඊළඟ දවසේ) ආයේ "ඉතුරු ටික" ඔබන්න.', 'err');
-    else if (e.fatal && e.status === 404) setStatus('Model එක හම්බුණේ නෑ. Key එක check කරලා වෙනත් model එකක් තෝරන්න.', 'err');
-    else if (e.fatal) setStatus('Key එක වැරදියි වගේ, නැත්නම් access නෑ: ' + e.message, 'err');
-    else setStatus('Error එකක්: ' + e.message + ' (Progress save වෙලා තියෙනවා)', 'err');
+    if (e.message === 'stopped') setStatus('run.stopped');
+    else if (e.daily) setStatus('run.daily', null, 'err');
+    else if (e.noQuota) setStatus('run.noquota', null, 'err');
+    else if (e.fatal && e.status === 404) setStatus('run.model404', null, 'err');
+    else if (e.fatal) setStatus('run.fatal', { msg: e.message }, 'err');
+    else setStatus('run.error', { msg: e.message }, 'err');
     log('Stopped: ' + e.message);
   } finally {
     save(); setBusy(false);
@@ -609,7 +885,7 @@ function stop() {
 
 function download() {
   const total = translatable(), d = doneCount();
-  if (d < total && !confirm('Lines ' + (total - d) + 'ක් තාම පරිවර්තනය වෙලා නෑ. ඒවා English එහෙමම යනවා. Download කරන්නද?')) return;
+  if (d < total && !confirm(t('dl.confirm', { n: total - d }))) return;
   const srt = buildSRT(S.entries, S.tr).replace(/\n/g, '\r\n');
   const blob = new Blob(['\uFEFF' + srt], { type: 'application/x-subrip;charset=utf-8' });
   const a = document.createElement('a');
@@ -620,9 +896,9 @@ function download() {
 }
 
 function clearProgress() {
-  if (!S.entries.length || !confirm('මේ file එකේ save කරලා තියෙන පරිවර්තන ඔක්කොම මකන්නද?')) return;
+  if (!S.entries.length || !confirm(t('clear.confirm'))) return;
   S.tr = {}; store.del(S.fp);
-  $('now').hidden = true; setStatus('');
+  $('now').hidden = true; setStatus(null);
   renderRows(); updateProgress();
 }
 
@@ -630,10 +906,11 @@ function clearProgress() {
 loadSettings();
 [...FIELDS, 'mixEn', 'remember', 'apiKey', 'model'].forEach(f => $(f).addEventListener('input', saveSettings));
 $('model').addEventListener('change', saveSettings);
+document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
 $('toggleKey').addEventListener('click', () => {
-  const k = $('apiKey'), show = k.type === 'password';
-  k.type = show ? 'text' : 'password';
-  $('toggleKey').textContent = show ? 'සඟවන්න' : 'පෙන්නන්න';
+  const k = $('apiKey');
+  k.type = k.type === 'password' ? 'text' : 'password';
+  $('toggleKey').textContent = t(k.type === 'password' ? 'key.show' : 'key.hide');
 });
 $('checkKey').addEventListener('click', loadModels);
 $('fileInput').addEventListener('change', e => { handleFile(e.target.files[0]); e.target.value = ''; });
@@ -645,8 +922,9 @@ $('start').addEventListener('click', start);
 $('stop').addEventListener('click', stop);
 $('download').addEventListener('click', download);
 $('clear').addEventListener('click', clearProgress);
+$('scan').addEventListener('click', scanBad);
 window.addEventListener('beforeunload', save);
-updateProgress();
+applyLang();
 </script>
 </body>
 </html>
