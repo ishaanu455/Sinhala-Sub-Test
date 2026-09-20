@@ -46,7 +46,7 @@ a{color:var(--primary)}
 }
 .help{color:var(--muted); font-size:.92rem; max-width:64ch}
 label{display:block; font-weight:600; margin:16px 0 6px}
-input[type=text],input[type=password],input[type=number],textarea{
+input[type=text],input[type=password],input[type=number],select,textarea{
   width:100%; font:inherit; padding:10px 12px; color:var(--ink);
   background:var(--field); border:1px solid var(--line); border-radius:8px;
 }
@@ -120,8 +120,8 @@ details ul{margin:8px 0 0; padding-left:18px; max-height:180px; overflow:auto}
     <div class="actions"><button class="btn" id="checkKey" type="button">Key එක check කරන්න</button></div>
     <p class="msg" id="keyMsg" role="status" aria-live="polite"></p>
     <label for="model">Model</label>
-    <input id="model" type="text" list="modelList" autocomplete="off" spellcheck="false" placeholder="Key එක check කළාම models එනවා">
-    <datalist id="modelList"></datalist>
+    <select id="model"><option value="">Key එක check කළාම models එනවා</option></select>
+    <p class="help" style="margin-top:8px">නමේ <b>flash-lite</b> තියෙන ඒවාට free quota වැඩියි. <b>pro</b> ඒවා free tier එකේ වැඩ නොකරන්න පුළුවන්.</p>
     <p class="help" style="margin-top:10px">Free tier එකේදී ඔයා යවන text Google ට ඔවුන්ගේ products වැඩිදියුණු කරන්න use කරන්න පුළුවන්. Private content නම් ඒක මතක තියාගන්න.</p>
   </section>
 
@@ -314,7 +314,7 @@ const store = {
 };
 
 /* ---------- settings ---------- */
-const FIELDS = ['ctxTitle', 'ctxChars', 'ctxNotes', 'chunkSize', 'gap', 'model'];
+const FIELDS = ['ctxTitle', 'ctxChars', 'ctxNotes', 'chunkSize', 'gap'];
 function loadSettings() {
   FIELDS.forEach(f => { const v = store.get('srt2si:' + f, null); if (v !== null) $(f).value = v; });
   $('mixEn').checked = store.get('srt2si:mixEn', '1') === '1';
@@ -324,6 +324,7 @@ function loadSettings() {
 function saveSettings() {
   FIELDS.forEach(f => store.set('srt2si:' + f, $(f).value));
   store.set('srt2si:mixEn', $('mixEn').checked ? '1' : '0');
+  if ($('model').value) store.set('srt2si:model', $('model').value);
   if ($('remember').checked) store.set('srt2si:key', $('apiKey').value.trim());
   else store.del('srt2si:key');
 }
@@ -462,17 +463,20 @@ async function loadModels() {
     const res = await fetch(API + '/models?pageSize=1000', { headers: { 'x-goog-api-key': key } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { const e = new Error((data.error && data.error.message) || res.statusText); e.status = res.status; throw e; }
-    const score = n => (/flash/.test(n) ? (/lite/.test(n) ? 1 : 0) : (/pro/.test(n) ? 2 : 3)) + (/preview|exp/.test(n) ? 0.5 : 0);
+    const score = n => (/lite/.test(n) ? 0 : /flash/.test(n) ? 1 : /pro/.test(n) ? 3 : 2) + (/preview|exp/.test(n) ? 0.5 : 0);
+    const tag = n => /lite/.test(n) ? '   (lite: free quota වැඩියි)' : /flash/.test(n) ? '   (free quota අඩුයි)' : /pro/.test(n) ? '   (free tier එකේ නැති වෙන්න පුළුවන්)' : '';
     const names = (data.models || [])
       .filter(m => (m.supportedGenerationMethods || []).indexOf('generateContent') !== -1)
       .map(m => m.name.replace(/^models\//, ''))
       .filter(n => !/image|tts|live|audio|embedding|aqa|robotics|computer|imagen|veo|learnlm/i.test(n))
       .sort((a, b) => score(a) - score(b) || b.localeCompare(a));
-    const dl = $('modelList'); dl.textContent = '';
-    names.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+    const sel = $('model');
+    const prev = sel.value || store.get('srt2si:model', '');
+    sel.textContent = '';
+    names.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n + tag(n); sel.appendChild(o); });
     if (!names.length) { setKeyMsg('Key එක වැඩ, ඒත් generateContent support කරන model එකක් හම්බුණේ නෑ.', 'err'); return false; }
-    if (names.indexOf($('model').value.trim()) === -1) $('model').value = names[0];
-    setKeyMsg('✓ Key එක හරි. Models ' + names.length + 'ක් හම්බුණා. පහළ Model එක වෙනස් කරන්නත් පුළුවන්.', 'ok');
+    sel.value = names.indexOf(prev) !== -1 ? prev : names[0];
+    setKeyMsg('✓ Key එක හරි. Models ' + names.length + 'ක් හම්බුණා. පහළ list එකෙන් model එකක් තෝරන්න.', 'ok');
     saveSettings();
     return true;
   } catch (e) {
@@ -624,7 +628,8 @@ function clearProgress() {
 
 /* ---------- wiring ---------- */
 loadSettings();
-[...FIELDS, 'mixEn', 'remember', 'apiKey'].forEach(f => $(f).addEventListener('input', saveSettings));
+[...FIELDS, 'mixEn', 'remember', 'apiKey', 'model'].forEach(f => $(f).addEventListener('input', saveSettings));
+$('model').addEventListener('change', saveSettings);
 $('toggleKey').addEventListener('click', () => {
   const k = $('apiKey'), show = k.type === 'password';
   k.type = show ? 'text' : 'password';
