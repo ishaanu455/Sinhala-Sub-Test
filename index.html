@@ -520,6 +520,9 @@ async function requestWithRetry(fn) {
       let wait;
       if (e.status === 429) {
         const raw = JSON.stringify(e.data || {});
+        const quotas = (raw.match(/"quotaId":"[^"]+"/g) || []).map(x => x.slice(11, -1)).join(', ');
+        log('429: ' + String(e.message || '').slice(0, 300) + (quotas ? ' | ' + quotas : ''));
+        if (/"quotaValue":"0"/.test(raw) || /limit:\s*0\b/.test(String(e.message))) { e.noQuota = true; throw e; }
         if (/PerDay/.test(raw) && !/PerMinute/.test(raw)) { e.daily = true; throw e; }
         wait = retryDelaySeconds(e.data) || Math.min(60, 15 * (attempt + 1));
         log('Limit (429) ආවා. තත්පර ' + wait + 'ක් රැඳී ඉන්නවා.');
@@ -533,7 +536,7 @@ async function requestWithRetry(fn) {
       }
     }
   }
-  throw new Error('ආයේ ආයේ උත්සාහ කළත් වැඩ කළේ නෑ.');
+  throw new Error('ආයේ ආයේ උත්සාහ කළත් වැඩ කළේ නෑ. Log එක බලන්න, නැත්නම් තත්පර ගාණ වැඩි කරලා / model එක මාරු කරලා බලන්න.');
 }
 
 async function translatePart(ids) {
@@ -584,6 +587,7 @@ async function start() {
     else setStatus('Lines ' + left + 'ක් පරිවර්තනය වුණේ නෑ (කහ ඉරින් පෙන්නලා තියෙනවා). "ඉතුරු ටික" ආයේ ඔබන්න, නැත්නම් අතින් ලියන්න.', 'err');
   } catch (e) {
     if (e.message === 'stopped') setStatus('නවත්තලා. Progress save වෙලා තියෙනවා.');
+    else if (e.noQuota) setStatus('මේ model එකට free tier එකේ quota එකක් නෑ (limit 0). Model එක වෙනස් කරන්න. උදා: නමේ "flash" හෝ "flash-lite" තියෙන වෙනත් එකක්. Log එකේ Google ගේ පණිවිඩය තියෙනවා.', 'err');
     else if (e.daily) setStatus('අද දවසේ free quota එක ඉවර වෙලා. Progress save වෙලා තියෙනවා. Quota reset වුණාම (ඊළඟ දවසේ) ආයේ "ඉතුරු ටික" ඔබන්න.', 'err');
     else if (e.fatal && e.status === 404) setStatus('Model එක හම්බුණේ නෑ. Key එක check කරලා වෙනත් model එකක් තෝරන්න.', 'err');
     else if (e.fatal) setStatus('Key එක වැරදියි වගේ, නැත්නම් access නෑ: ' + e.message, 'err');
