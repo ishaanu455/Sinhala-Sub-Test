@@ -130,7 +130,7 @@ input[type=text],input[type=password],input[type=number],input[type=search],sele
 }
 textarea{resize:vertical; min-height:5.5em}
 .inline{display:flex; gap:10px; align-items:stretch}
-.inline input{flex:1; min-width:0}
+.inline input,.inline select{flex:1; min-width:0}
 .check{display:flex; gap:10px; align-items:flex-start; font-weight:400; margin:14px 0 0}
 .check input{margin-top:.55em; width:18px; height:18px; flex:none}
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
@@ -323,6 +323,15 @@ dialog .actions{justify-content:flex-end; margin-top:18px}
       <summary><span class="n" aria-hidden="true"></span><h2 data-i18n="ctx.h2"></h2><span class="sumchip" id="sumCtx"></span></summary>
       <div class="body">
         <p class="help" data-i18n="ctx.help"></p>
+
+        <label for="filmSelect" data-i18n="film.select.label"></label>
+        <div class="inline">
+          <select id="filmSelect"></select>
+          <button class="btn" id="filmLoad" type="button" data-i18n="film.load"></button>
+          <button class="btn" id="filmDelete" type="button" data-i18n="film.delete"></button>
+        </div>
+        <p class="help" id="filmEmpty" data-i18n="film.empty" hidden></p>
+
         <label for="ctxTitle" data-i18n="ctx.title.label"></label>
         <input id="ctxTitle" type="text" data-i18n-ph="ctx.title.ph">
         <label for="ctxChars" data-i18n="ctx.chars.label"></label>
@@ -330,6 +339,13 @@ dialog .actions{justify-content:flex-end; margin-top:18px}
         <label for="ctxNotes" data-i18n="ctx.notes.label"></label>
         <textarea id="ctxNotes" data-i18n-ph="ctx.notes.ph"></textarea>
         <label class="check" for="mixEn"><input type="checkbox" id="mixEn" checked><span data-i18n="ctx.mix"></span></label>
+
+        <label for="filmSaveName" data-i18n="film.save.label"></label>
+        <div class="inline">
+          <input id="filmSaveName" type="text" data-i18n-ph="film.save.ph">
+          <button class="btn primary" id="filmSave" type="button" data-i18n="film.save"></button>
+        </div>
+        <p class="msg" id="filmMsg" role="status" aria-live="polite"></p>
       </div>
     </details>
 
@@ -610,6 +626,24 @@ const I18N = {
     'ctx.notes.label': 'Tone සහ වෙනත් උපදෙස්',
     'ctx.notes.ph': 'උදා: street slang, joke වල timing තියාගන්න',
     'ctx.mix': 'කතාවේ පාවිච්චි වෙන English වචන (Sorry, OK, Boss…) English අකුරෙන්ම තියන්න',
+    'film.select.label': 'Save කරලා තියෙන films',
+    'film.select.none': '— film එකක් තෝරන්න —',
+    'film.load': 'Load කරන්න',
+    'film.delete': 'මකන්න',
+    'film.empty': 'තවම films save කරලා නෑ. පහළින් විස්තර දාලා save කරන්න.',
+    'film.save.label': 'මේ විස්තර film නමකින් save කරන්න',
+    'film.save.ph': 'උදා: Reply 1988',
+    'film.save': 'Save කරන්න',
+    'film.msg.needname': 'Save කරන්න කලින් film එකට නමක් දෙන්න.',
+    'film.msg.saved': '"{name}" විදිහට save කළා.',
+    'film.msg.updated': '"{name}" update කළා.',
+    'film.msg.loaded': '"{name}" load කළා.',
+    'film.msg.deleted': '"{name}" delete කළා.',
+    'film.msg.neednone': 'මුලින්ම list එකෙන් film එකක් තෝරන්න.',
+    'film.overwrite.confirm': '"{name}" කියලා film එකක් කලින්ම save කරලා තියෙනවා. ඒක අලුත් විස්තර වලින් replace කරන්නද?',
+    'film.overwrite.ok': 'Overwrite කරන්න',
+    'film.delete.confirm': '"{name}" delete කරන්නද? මේක undo කරන්න බෑ.',
+    'film.delete.ok': 'මකන්න',
     'file.h2': 'SRT file එක',
     'file.drop.title': 'SRT file එක මෙතනට drag කරන්න',
     'file.drop.hint': 'නැත්නම් touch කරලා තෝරන්න',
@@ -690,6 +724,24 @@ const I18N = {
     'ctx.notes.label': 'Tone and other notes',
     'ctx.notes.ph': 'e.g. street slang, keep the timing of the jokes',
     'ctx.mix': 'Keep English words people really use (Sorry, OK, Boss…) in English letters',
+    'film.select.label': 'Saved films',
+    'film.select.none': '— select a film —',
+    'film.load': 'Load',
+    'film.delete': 'Delete',
+    'film.empty': 'No saved films yet. Fill in the details below and save one.',
+    'film.save.label': 'Save these details under a film name',
+    'film.save.ph': 'e.g. Reply 1988',
+    'film.save': 'Save',
+    'film.msg.needname': 'Give the film a name before saving.',
+    'film.msg.saved': 'Saved "{name}".',
+    'film.msg.updated': 'Updated "{name}".',
+    'film.msg.loaded': 'Loaded "{name}".',
+    'film.msg.deleted': 'Deleted "{name}".',
+    'film.msg.neednone': 'Select a film from the list first.',
+    'film.overwrite.confirm': 'A film named "{name}" is already saved. Replace it with the current details?',
+    'film.overwrite.ok': 'Overwrite',
+    'film.delete.confirm': 'Delete "{name}"? This can\'t be undone.',
+    'film.delete.ok': 'Delete',
     'file.h2': 'SRT file',
     'file.drop.title': 'Drag the SRT file here',
     'file.drop.hint': 'or tap to choose one',
@@ -927,6 +979,7 @@ const S = {
   now: null, filter: 'all', t0: 0, d0: 0, runIds: [], runKey: '', runModel: '', kmsg: null
 };
 let KEYS = [], USAGE = {}, TEST = {};
+let FILMS = [];
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
@@ -957,6 +1010,80 @@ function saveSettings() {
 }
 function getCtx() {
   return { title: $('ctxTitle').value.trim(), chars: $('ctxChars').value.trim(), notes: $('ctxNotes').value.trim(), mixEnglish: $('mixEn').checked };
+}
+
+/* ---------- saved films (per-film context presets) ---------- */
+function loadFilms() {
+  try { FILMS = JSON.parse(store.get('srt2si:films', '[]')) || []; } catch (e) { FILMS = []; }
+}
+function saveFilms() { store.set('srt2si:films', JSON.stringify(FILMS)); }
+function findFilm(name) {
+  const nm = name.trim().toLowerCase();
+  return FILMS.filter(f => f.name.toLowerCase() === nm)[0] || null;
+}
+function setFilmMsg(key, vars, kind) {
+  const s = $('filmMsg');
+  s.textContent = key ? t(key, vars) : '';
+  s.dataset.kind = kind || '';
+}
+function renderFilmSelect() {
+  const sel = $('filmSelect'), cur = sel.value;
+  sel.textContent = '';
+  const opt0 = document.createElement('option');
+  opt0.value = ''; opt0.textContent = t('film.select.none');
+  sel.appendChild(opt0);
+  FILMS.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.id; o.textContent = f.name;
+    sel.appendChild(o);
+  });
+  if (FILMS.some(f => f.id === cur)) sel.value = cur;
+  $('filmEmpty').hidden = FILMS.length > 0;
+  $('filmDelete').disabled = !sel.value;
+  $('filmLoad').disabled = !sel.value;
+}
+function onFilmSelectChange() {
+  const sel = $('filmSelect'), f = FILMS.filter(x => x.id === sel.value)[0];
+  $('filmSaveName').value = f ? f.name : '';
+  $('filmDelete').disabled = !sel.value;
+  $('filmLoad').disabled = !sel.value;
+  setFilmMsg(null);
+}
+async function saveFilmAs() {
+  const name = $('filmSaveName').value.trim();
+  if (!name) { setFilmMsg('film.msg.needname', null, 'err'); return; }
+  const ctx = getCtx();
+  const existing = findFilm(name);
+  if (existing) {
+    if (!(await ask(t('film.overwrite.confirm', { name: existing.name }), 'film.overwrite.ok'))) return;
+    existing.title = ctx.title; existing.chars = ctx.chars; existing.notes = ctx.notes; existing.mixEnglish = ctx.mixEnglish; existing.updated = Date.now();
+    saveFilms(); renderFilmSelect(); $('filmSelect').value = existing.id;
+    setFilmMsg('film.msg.updated', { name: existing.name }, 'ok');
+  } else {
+    const f = { id: 'f' + Date.now() + Math.random().toString(36).slice(2, 7), name, title: ctx.title, chars: ctx.chars, notes: ctx.notes, mixEnglish: ctx.mixEnglish, updated: Date.now() };
+    FILMS.push(f); saveFilms(); renderFilmSelect(); $('filmSelect').value = f.id;
+    setFilmMsg('film.msg.saved', { name: f.name }, 'ok');
+  }
+}
+function loadSelectedFilm() {
+  const sel = $('filmSelect'), f = FILMS.filter(x => x.id === sel.value)[0];
+  if (!f) { setFilmMsg('film.msg.neednone', null, 'err'); return; }
+  $('ctxTitle').value = f.title || '';
+  $('ctxChars').value = f.chars || '';
+  $('ctxNotes').value = f.notes || '';
+  $('mixEn').checked = f.mixEnglish !== false;
+  $('filmSaveName').value = f.name;
+  saveSettings();
+  setFilmMsg('film.msg.loaded', { name: f.name }, 'ok');
+}
+async function deleteSelectedFilm() {
+  const sel = $('filmSelect'), f = FILMS.filter(x => x.id === sel.value)[0];
+  if (!f) { setFilmMsg('film.msg.neednone', null, 'err'); return; }
+  if (!(await ask(t('film.delete.confirm', { name: f.name }), 'film.delete.ok'))) return;
+  FILMS = FILMS.filter(x => x.id !== f.id);
+  saveFilms(); renderFilmSelect(); $('filmSelect').value = '';
+  if ($('filmSaveName').value.trim() === f.name) $('filmSaveName').value = '';
+  setFilmMsg('film.msg.deleted', { name: f.name }, 'ok');
 }
 
 /* ---------- usage tracking (Pacific day = when Google resets the daily quota) ---------- */
@@ -1112,7 +1239,7 @@ function applyLang() {
     r.rt.textContent = t('row.redo');
     r.rt.setAttribute('aria-label', t('row.redo.aria', { id: i + 1 }));
   });
-  renderModelOptions(); renderStatus(); renderKeyMsg(); renderKeysMsg(); updateSummaries(); applyTheme(); renderUsage();
+  renderModelOptions(); renderStatus(); renderKeyMsg(); renderKeysMsg(); renderFilmSelect(); updateSummaries(); applyTheme(); renderUsage();
   if (S.now) showNow(S.now); else resetNow();
   updateProgress();
 }
@@ -1743,6 +1870,9 @@ async function testKey(k) {
 /* ---------- wiring ---------- */
 loadSettings();
 loadKeys();
+loadFilms();
+renderFilmSelect();
+onFilmSelectChange();
 if (window.matchMedia && window.matchMedia('(max-width:899px)').matches) {
   $('s-ctx').open = false;
   if ($('apiKey').value.trim()) $('s-key').open = false; // remembered key: less scrolling on phones
@@ -1772,6 +1902,11 @@ $('scan').addEventListener('click', scanBad);
 $('q').addEventListener('input', applyFilter);
 $('addKey').addEventListener('click', addKey);
 $('newKey').addEventListener('keydown', e => { if (e.key === 'Enter') addKey(); });
+$('filmSelect').addEventListener('change', onFilmSelectChange);
+$('filmLoad').addEventListener('click', loadSelectedFilm);
+$('filmDelete').addEventListener('click', deleteSelectedFilm);
+$('filmSave').addEventListener('click', saveFilmAs);
+$('filmSaveName').addEventListener('keydown', e => { if (e.key === 'Enter') saveFilmAs(); });
 setInterval(renderUsage, 30000); // keeps the reset countdown fresh, and notices when the Pacific day changes
 document.querySelectorAll('.filters button').forEach(b => b.addEventListener('click', () => {
   S.filter = b.dataset.f;
