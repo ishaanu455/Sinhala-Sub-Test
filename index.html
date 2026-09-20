@@ -226,13 +226,35 @@ details.log ul{margin:8px 0 0; padding-left:18px; max-height:180px; overflow:aut
 .tag{font-size:.75rem; line-height:1.4; padding:1px 8px; border:1px solid var(--todo); color:var(--todo); border-radius:999px}
 .rowsempty{color:var(--muted); padding:18px 0}
 
+/* usage + saved keys */
+.usage h3{font-size:1rem; line-height:1.5; margin:24px 0 6px; font-weight:700}
+.urow{padding:10px 0; border-top:1px solid var(--line)}
+.urow:first-child{border-top:0}
+.uname{font:600 .86rem/1.5 ui-monospace,Menlo,Consolas,monospace; word-break:break-all}
+.uname.sel::after{content:""; display:inline-block; width:6px; height:6px; margin-left:8px; border-radius:50%; background:var(--primary); vertical-align:middle}
+.ustat{display:flex; flex-wrap:wrap; gap:2px 16px; font-size:.86rem; color:var(--muted)}
+.ustat b{color:var(--ink); font-variant-numeric:tabular-nums}
+.uflag{font-size:.84rem; margin-top:2px}
+.krow{padding:14px 0; border-top:1px solid var(--line)}
+.krow:first-child{border-top:0; padding-top:4px}
+.khead{display:flex; flex-wrap:wrap; align-items:center; gap:2px 10px}
+.kname{font-weight:600}
+.kmask{font:.78rem/1.5 ui-monospace,Menlo,Consolas,monospace; color:var(--muted)}
+.badge{font-size:.72rem; line-height:1.5; padding:0 9px; border-radius:999px; background:var(--primary); color:var(--on-primary); font-weight:600}
+.kstat{font-size:.88rem; margin-top:2px}
+.kuse{font-size:.84rem; color:var(--muted)}
+.kacts{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+.kacts .btn{min-height:36px; padding:0 14px; font-size:.86rem}
+
 /* confirm dialog */
 dialog{
-  width:min(420px,calc(100vw - 32px)); padding:22px; border:1px solid var(--line); border-radius:12px;
+  width:min(500px,calc(100vw - 32px)); padding:22px; border:1px solid var(--line); border-radius:12px;
   background:var(--surface); color:var(--ink);
 }
 dialog::backdrop{background:rgba(8,10,24,.55)}
 dialog p{margin:0 0 4px}
+dialog h2{margin-bottom:2px}
+dialog label{margin-top:12px}
 dialog .actions{justify-content:flex-end; margin-top:18px}
 
 .ver{max-width:1220px; margin:0 auto; padding:0 24px 28px; color:var(--muted); font:.78rem/1.4 ui-monospace,Menlo,Consolas,monospace}
@@ -273,6 +295,27 @@ dialog .actions{justify-content:flex-end; margin-top:18px}
         <select id="model"><option value="" data-i18n="model.placeholder"></option></select>
         <p class="help" style="margin-top:8px" data-i18n-html="model.help"></p>
         <p class="help" style="margin-top:10px" data-i18n="key.privacy"></p>
+        <div class="usage">
+          <h3 data-i18n="usage.h"></h3>
+          <div id="usageBody"></div>
+          <p class="help" id="usageReset" style="margin-top:8px"></p>
+          <p class="help" data-i18n-html="usage.note"></p>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" id="s-keys">
+      <summary><h2 data-i18n="panel.keys"></h2><span class="sumchip" id="sumKeys"></span></summary>
+      <div class="body">
+        <p class="help" data-i18n="keys.help"></p>
+        <div id="keyList"></div>
+        <label for="newLabel" data-i18n="keys.name"></label>
+        <input id="newLabel" type="text" autocomplete="off" data-i18n-ph="keys.name.ph">
+        <label for="newKey" data-i18n="keys.key"></label>
+        <input id="newKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…">
+        <div class="actions"><button class="btn" id="addKey" type="button" data-i18n="keys.add"></button></div>
+        <p class="msg" id="keysMsg" role="status" aria-live="polite"></p>
+        <p class="help" data-i18n="keys.testnote"></p>
       </div>
     </details>
 
@@ -387,6 +430,20 @@ dialog .actions{justify-content:flex-end; margin-top:18px}
     <div class="actions">
       <button class="btn" id="dlgNo" value="cancel" autofocus></button>
       <button class="btn primary" id="dlgYes" value="ok"></button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="nameDlg">
+  <form method="dialog">
+    <h2 data-i18n="name.title"></h2>
+    <label for="outName" data-i18n="name.label"></label>
+    <input id="outName" type="text" spellcheck="false" autocomplete="off">
+    <p class="help" style="margin-top:8px" data-i18n="name.help"></p>
+    <div class="actions">
+      <button class="btn" type="button" id="nameNo"></button>
+      <button class="btn" type="button" id="nameSkip"></button>
+      <button class="btn primary" type="submit" id="nameYes" value="ok"></button>
     </div>
   </form>
 </dialog>
@@ -717,7 +774,11 @@ Object.assign(I18N.si, {
   'row.long': 'දිග වැඩියි',
   'row.redo': 'ආයේ පරිවර්තනය',
   'row.redo.aria': 'Line {id} ආයේ පරිවර්තනය කරන්න',
-  'row.kept': 'ආයේ පරිවර්තනය කරන්න බැරි වුණා. කලින් පරිවර්තනය තියාගත්තා.'
+  'row.kept': 'ආයේ පරිවර්තනය කරන්න බැරි වුණා. කලින් පරිවර්තනය තියාගත්තා.',
+  'name.title': 'File එකේ නම',
+  'name.label': 'Download වෙන file එකේ නම',
+  'name.help': 'නම වෙනස් කරන්න, නැත්නම් "කලින් නමම" ඔබන්න. .srt ඉබේම එකතු වෙනවා.',
+  'name.skip': 'කලින් නමම'
 });
 Object.assign(I18N.en, {
   'skip': 'Skip to main content',
@@ -749,7 +810,101 @@ Object.assign(I18N.en, {
   'row.long': 'Too long',
   'row.redo': 'Translate again',
   'row.redo.aria': 'Translate line {id} again',
-  'row.kept': 'Could not translate it again. The previous translation was kept.'
+  'row.kept': 'Could not translate it again. The previous translation was kept.',
+  'name.title': 'File name',
+  'name.label': 'Name of the downloaded file',
+  'name.help': 'Change the name, or press "Keep default" to skip. .srt is added automatically.',
+  'name.skip': 'Keep default'
+});
+Object.assign(I18N.si, {
+  'run.daily': 'අද දවසේ free quota එක ඉවර වෙලා. Progress save වෙලා තියෙනවා. {time} ට පස්සේ quota reset වෙනවා. එතකොට "ඉතුරු ටික" ආයේ ඔබන්න (නැත්නම් වෙන key/model එකක් use කරන්න).',
+  'usage.h': 'අද usage (මේ key එකේ)',
+  'usage.nokey': 'Key එකක් දැම්මාම මෙතන usage පේනවා.',
+  'usage.empty': 'මේ key එකෙන් අද මේ page එකෙන් request කරලා නෑ.',
+  'usage.req': 'Requests',
+  'usage.tok': 'Tokens',
+  'usage.lines': 'Lines',
+  'usage.ok': 'ප්‍රශ්නයක් නෑ',
+  'usage.exh': 'Quota ඉවරයි · {time} ට reset',
+  'usage.none': 'මේ model එකට free quota නෑ (limit 0)',
+  'usage.reset': 'Quota reset වෙන්නේ (Pacific මැදියම් රෑ) {time} ට, තව {left}ක් ඇතුළත.',
+  'usage.note': 'මේ ගාණ මේ page එකෙන් යවපු ඒවා විතරයි. ඇත්ත usage එක <a href="https://aistudio.google.com/rate-limit" target="_blank" rel="noopener">AI Studio</a> එකේ බලන්න.',
+  'panel.keys': 'සුරකින ලද API keys',
+  'keys.help': 'Keys කිහිපයක් save කරලා, හැම එකකම usage එකයි quota එක reset වුණාද කියලාත් බලන්න. Save වෙන්නේ මේ browser එකේ විතරයි (plain text). Shared computer එකක නම් save කරන්න එපා. එකම Google project එකේ keys වලට quota එක share වෙනවා.',
+  'keys.testnote': 'Test කරන්න යන්නේ ඉහළින් තෝරලා තියෙන model එකට. ඒකට request එකක් quota එකෙන් යනවා.',
+  'keys.name': 'නම (nickname)',
+  'keys.name.ph': 'උදා: Gmail 1',
+  'keys.key': 'API key',
+  'keys.add': 'List එකට add කරන්න',
+  'keys.none': 'keys නෑ',
+  'keys.count': 'keys {n}ක්',
+  'keys.empty': 'තාම key එකක්වත් save කරලා නෑ.',
+  'keys.err.empty': 'Key එක මුලින් දාන්න.',
+  'keys.err.dup': 'මේ key එක කලින්ම list එකේ තියෙනවා ({name}).',
+  'keys.added': '✓ Key එක list එකට add කළා.',
+  'keys.active': 'Active',
+  'keys.use': 'Use',
+  'keys.test': 'Test',
+  'keys.remove': 'Remove',
+  'keys.remove.confirm': '"{name}" key එක list එකෙන් අයින් කරන්නද?',
+  'keys.remove.ok': 'අයින් කරන්න',
+  'ks.invalid': 'Key එක වැරදියි, නැත්නම් access නෑ',
+  'ks.exh': 'Quota ඉවරයි · {time} ට reset',
+  'ks.none': 'මේ model එකට free quota නෑ',
+  'ks.ok': '✓ වැඩ කරනවා ({time})',
+  'ks.unknown': 'තාම check කරලා නෑ',
+  'ks.reset': 'Reset වෙලා ඇති. Test කරලා බලන්න.',
+  'ks.today': 'අද: requests {req}, tokens {tok}',
+  'ks.others': 'තව models {n}ක ඉවරයි',
+  'test.keyok': '✓ Key එක හරි. (Model එකක් තෝරලා නැති නිසා quota test කළේ නෑ.)',
+  'test.ok': '✓ {model} වැඩ කරනවා, quota තියෙනවා.',
+  'test.rate': 'විනාඩියේ limit එකක් ආවා. තත්පර කිහිපයකින් ආයේ Test කරන්න.',
+  'test.fail': 'Test කරන්න බැරි වුණා: {msg}'
+});
+Object.assign(I18N.en, {
+  'run.daily': "Today's free quota is used up. Your progress is saved. The quota resets at {time}. Then press \"Translate the remaining lines\" again (or use another key or model).",
+  'usage.h': "Today's usage (this key)",
+  'usage.nokey': 'Enter a key and its usage shows up here.',
+  'usage.empty': "This page hasn't made any requests with this key today.",
+  'usage.req': 'Requests',
+  'usage.tok': 'Tokens',
+  'usage.lines': 'Lines',
+  'usage.ok': 'No problems',
+  'usage.exh': 'Quota used up · resets at {time}',
+  'usage.none': 'No free quota on this model (limit 0)',
+  'usage.reset': 'Quota resets at {time} (midnight Pacific), in about {left}.',
+  'usage.note': 'These numbers only count requests sent from this page. See the real usage in <a href="https://aistudio.google.com/rate-limit" target="_blank" rel="noopener">AI Studio</a>.',
+  'panel.keys': 'Saved API keys',
+  'keys.help': 'Save several keys and see the usage of each, and whether its quota has reset. Keys are stored in this browser only (plain text). Do not save them on a shared computer. Keys from the same Google project share one quota.',
+  'keys.testnote': 'Test uses the model selected above. It costs one request from the quota.',
+  'keys.name': 'Nickname',
+  'keys.name.ph': 'e.g. Gmail 1',
+  'keys.key': 'API key',
+  'keys.add': 'Add to list',
+  'keys.none': 'No keys',
+  'keys.count': '{n} keys',
+  'keys.empty': 'No keys saved yet.',
+  'keys.err.empty': 'Enter the key first.',
+  'keys.err.dup': 'This key is already in the list ({name}).',
+  'keys.added': '✓ Key added to the list.',
+  'keys.active': 'Active',
+  'keys.use': 'Use',
+  'keys.test': 'Test',
+  'keys.remove': 'Remove',
+  'keys.remove.confirm': 'Remove the key "{name}" from the list?',
+  'keys.remove.ok': 'Remove',
+  'ks.invalid': 'Invalid key, or no access',
+  'ks.exh': 'Quota used up · resets at {time}',
+  'ks.none': 'No free quota on this model',
+  'ks.ok': '✓ Working ({time})',
+  'ks.unknown': 'Not checked yet',
+  'ks.reset': 'Should have reset. Press Test to check.',
+  'ks.today': 'Today: {req} requests, {tok} tokens',
+  'ks.others': '{n} more models used up',
+  'test.keyok': '✓ The key is valid. (No model selected, so the quota was not tested.)',
+  'test.ok': '✓ {model} works, quota is available.',
+  'test.rate': 'Per-minute limit hit. Try Test again in a few seconds.',
+  'test.fail': 'Could not test: {msg}'
 });
 I18N.si['dlg.ok'] = 'හරි';
 I18N.en['dlg.ok'] = 'OK';
@@ -769,8 +924,9 @@ const LONG_LINE = 48;
 const S = {
   entries: [], tr: {}, fileName: '', badFile: null, fp: '', running: false, stop: false, abort: null,
   rows: [], lastReq: 0, saveTimer: null, modelNames: [], st: null, km: null,
-  now: null, filter: 'all', t0: 0, d0: 0, runIds: []
+  now: null, filter: 'all', t0: 0, d0: 0, runIds: [], runKey: '', runModel: '', kmsg: null
 };
+let KEYS = [], USAGE = {}, TEST = {};
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
@@ -797,9 +953,90 @@ function saveSettings() {
   if ($('remember').checked) store.set('srt2si:key', $('apiKey').value.trim());
   else store.del('srt2si:key');
   updateSummaries();
+  renderUsage();
 }
 function getCtx() {
   return { title: $('ctxTitle').value.trim(), chars: $('ctxChars').value.trim(), notes: $('ctxNotes').value.trim(), mixEnglish: $('mixEn').checked };
+}
+
+/* ---------- usage tracking (Pacific day = when Google resets the daily quota) ---------- */
+function loadKeys() {
+  try { KEYS = JSON.parse(store.get('srt2si:keys', '[]')) || []; } catch (e) { KEYS = []; }
+  try { USAGE = JSON.parse(store.get('srt2si:usage', '{}')) || {}; } catch (e) { USAGE = {}; }
+}
+function saveKeys() { store.set('srt2si:keys', JSON.stringify(KEYS)); }
+function saveUsage() { store.set('srt2si:usage', JSON.stringify(USAGE)); }
+function keyFp(k) { return 'k' + hashStr(k); }
+function pacificParts(ms) {
+  const p = {};
+  new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    .formatToParts(new Date(ms)).forEach(x => { p[x.type] = x.value; });
+  return p;
+}
+function pacificDay(ms) { const p = pacificParts(ms); return p.year + '-' + p.month + '-' + p.day; }
+function pacificSinceMidnight(ms) {
+  const p = pacificParts(ms);
+  return ((+p.hour * 60 + +p.minute) * 60 + +p.second) * 1000 + (ms % 1000);
+}
+function nextPacificReset(ms) {
+  let c = ms + 86400000 - pacificSinceMidnight(ms);
+  for (let i = 0; i < 3; i++) { // fix the 23h / 25h days around daylight saving changes
+    const s = pacificSinceMidnight(c);
+    if (s === 0) break;
+    c = s < 43200000 ? c - s : c + 86400000 - s;
+  }
+  return c;
+}
+function fmtClock(ts) { return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+function fmtStamp(ts) {
+  const d = new Date(ts), n = new Date();
+  if (d.toDateString() === n.toDateString()) return fmtClock(ts);
+  return d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function fmtNum(n) { return Number(n || 0).toLocaleString(); }
+
+function usageRec(fp, create) {
+  const day = pacificDay(Date.now());
+  let r = USAGE[fp];
+  if (!r) { r = { day: day, m: {}, exh: {} }; if (create) USAGE[fp] = r; return r; } // reading never stores a record
+  if (r.day !== day) { r.day = day; r.m = {}; r.exh = {}; } // a new Pacific day: the daily quota has reset
+  return r;
+}
+function exhausted(r, model) {
+  const x = r.exh[model];
+  return x && x.until > Date.now() ? x : null;
+}
+function trackUse(key, model, d) {
+  if (!key || !model) return;
+  const r = usageRec(keyFp(key), true);
+  const m = r.m[model] || (r.m[model] = { req: 0, tin: 0, tout: 0, lines: 0 });
+  m.req += d.req || 0; m.tin += d.tin || 0; m.tout += d.tout || 0; m.lines += d.lines || 0;
+  if (d.req) { r.lastOk = Date.now(); r.invalid = false; delete r.exh[model]; } // a request went through
+  saveUsage(); renderUsage();
+}
+function markExhausted(key, model, kind) {
+  if (!key || !model) return;
+  const r = usageRec(keyFp(key), true);
+  r.exh[model] = { until: nextPacificReset(Date.now()), kind: kind };
+  r.lastExh = r.exh[model].until;
+  saveUsage(); renderUsage();
+}
+function markInvalid(key) {
+  if (!key) return;
+  usageRec(keyFp(key), true).invalid = true;
+  saveUsage(); renderUsage();
+}
+function markOk(key) {
+  if (!key) return;
+  const r = usageRec(keyFp(key), true);
+  r.invalid = false; r.lastOk = Date.now();
+  saveUsage(); renderUsage();
+}
+function classify429(data, message) {
+  const raw = JSON.stringify(data || {});
+  if (/"quotaValue":"0"/.test(raw) || /limit:\s*0\b/.test(String(message))) return 'none';
+  if (/PerDay/.test(raw) && !/PerMinute/.test(raw)) return 'daily';
+  return 'rate';
 }
 
 /* ---------- theme ---------- */
@@ -875,7 +1112,7 @@ function applyLang() {
     r.rt.textContent = t('row.redo');
     r.rt.setAttribute('aria-label', t('row.redo.aria', { id: i + 1 }));
   });
-  renderModelOptions(); renderStatus(); renderKeyMsg(); updateSummaries(); applyTheme();
+  renderModelOptions(); renderStatus(); renderKeyMsg(); renderKeysMsg(); updateSummaries(); applyTheme(); renderUsage();
   if (S.now) showNow(S.now); else resetNow();
   updateProgress();
 }
@@ -992,6 +1229,7 @@ function setBusy(b) {
   $('stop').disabled = !b;
   document.body.setAttribute('aria-busy', String(b));
   updateProgress();
+  renderKeyList(); // "Use" buttons are disabled while a translation is running
 }
 function paintRow(id) {
   const r = S.rows[id - 1];
@@ -1133,21 +1371,23 @@ async function loadModels() {
     renderModelOptions();
     $('model').value = names.indexOf(prev) !== -1 ? prev : names[0];
     setKeyMsg('key.ok', { n: names.length }, 'ok');
+    markOk(key);
     saveSettings();
     return true;
   } catch (e) {
-    if (e.status === 400 || e.status === 403) setKeyMsg('key.bad', null, 'err');
+    if (e.status === 400 || e.status === 403) { markInvalid(key); setKeyMsg('key.bad', null, 'err'); }
     else setKeyMsg('key.fail', { msg: e.message }, 'err');
     return false;
   }
 }
 
 async function callGemini(model, system, user, temperature) {
+  const key = $('apiKey').value.trim();
   S.lastReq = Date.now();
   S.abort = new AbortController();
   const res = await fetch(API + '/models/' + encodeURIComponent(model) + ':generateContent', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': $('apiKey').value.trim() },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: 'user', parts: [{ text: user }] }],
@@ -1164,6 +1404,8 @@ async function callGemini(model, system, user, temperature) {
     e.status = res.status; e.data = data;
     throw e;
   }
+  const um = data.usageMetadata || {};
+  trackUse(key, model, { req: 1, tin: um.promptTokenCount || 0, tout: Math.max(0, (um.totalTokenCount || 0) - (um.promptTokenCount || 0)) || um.candidatesTokenCount || 0 });
   const cand = data.candidates && data.candidates[0];
   const text = ((cand && cand.content && cand.content.parts) || []).map(p => p.text || '').join('');
   return { text, finish: cand && cand.finishReason, blocked: data.promptFeedback && data.promptFeedback.blockReason };
@@ -1217,6 +1459,7 @@ async function translatePart(ids, attempt) {
     S.tr[k] = got[k]; setRow(+k); n++; last = Math.max(last, +k);
   }
   if (foreign) log(t('log.foreign', { n: foreign }));
+  if (n) trackUse($('apiKey').value.trim(), model, { lines: n });
   if (last) showNow(last);
   save(); updateProgress(); applyFilter();
   if (n < ids.length) log(t('log.missing', { n: ids.length - n, why: (r.finish && r.finish !== 'STOP') ? ' (' + r.finish + ')' : '' }));
@@ -1247,6 +1490,7 @@ async function run(only) {
   if (!todo.length) { setStatus('run.alldone', null, 'ok'); return; }
   const size = Math.min(300, Math.max(10, parseInt($('chunkSize').value, 10) || 100));
   S.stop = false; S.runIds = todo.slice(); S.t0 = Date.now(); S.d0 = doneCount();
+  S.runKey = $('apiKey').value.trim(); S.runModel = $('model').value.trim();
   setBusy(true);
   try {
     for (const batch of chunkArray(todo, size)) await translateBatch(batch);
@@ -1255,10 +1499,13 @@ async function run(only) {
     else setStatus('run.left', { n: left }, 'err');
   } catch (e) {
     if (e.message === 'stopped') setStatus('run.stopped');
-    else if (e.daily) setStatus('run.daily', null, 'err');
-    else if (e.noQuota) setStatus('run.noquota', null, 'err');
+    else if (e.daily) { markExhausted(S.runKey, S.runModel, 'daily'); setStatus('run.daily', { time: fmtClock(nextPacificReset(Date.now())) }, 'err'); }
+    else if (e.noQuota) { markExhausted(S.runKey, S.runModel, 'none'); setStatus('run.noquota', null, 'err'); }
     else if (e.fatal && e.status === 404) setStatus('run.model404', null, 'err');
-    else if (e.fatal) setStatus('run.fatal', { msg: e.message }, 'err');
+    else if (e.fatal) {
+      if (e.status === 401 || e.status === 403 || /api key/i.test(String(e.message))) markInvalid(S.runKey);
+      setStatus('run.fatal', { msg: e.message }, 'err');
+    }
     else setStatus('run.error', { msg: e.message }, 'err');
     log('Stopped: ' + e.message);
   } finally {
@@ -1284,14 +1531,43 @@ function stop() {
   if (S.abort) S.abort.abort();
 }
 
+function defaultOutName() { return (S.fileName || 'subtitles').replace(/\.srt$/i, '') + '.si.srt'; }
+function cleanName(n) {
+  n = String(n || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').trim().replace(/[. ]+$/, '');
+  if (!n) return '';
+  return /\.srt$/i.test(n) ? n : n + '.srt';
+}
+// resolves to the chosen file name, the default name (skip), or null (cancelled)
+function askName(def) {
+  const d = $('nameDlg'), inp = $('outName');
+  if (typeof d.showModal !== 'function') return Promise.resolve(def);
+  inp.value = def;
+  $('nameNo').textContent = t('dlg.cancel');
+  $('nameSkip').textContent = t('name.skip');
+  $('nameYes').textContent = t('dl.ok');
+  d.returnValue = '';
+  return new Promise(res => {
+    d.addEventListener('close', () => {
+      if (d.returnValue === 'ok') res(cleanName(inp.value) || def);
+      else if (d.returnValue === 'skip') res(def);
+      else res(null);
+    }, { once: true });
+    d.showModal();
+    inp.focus();
+    inp.setSelectionRange(0, def.replace(/\.srt$/i, '').length); // select the name, keep the extension
+  });
+}
+
 async function download() {
   const total = translatable(), d = doneCount();
   if (d < total && !(await ask(t('dl.confirm', { n: total - d }), 'dl.ok'))) return;
+  const name = await askName(defaultOutName());
+  if (name === null) return;
   const srt = buildSRT(S.entries, S.tr).replace(/\n/g, '\r\n');
   const blob = new Blob(['\uFEFF' + srt], { type: 'application/x-subrip;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = (S.fileName || 'subtitles').replace(/\.srt$/i, '') + '.si.srt';
+  a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
 }
@@ -1303,8 +1579,170 @@ async function clearProgress() {
   renderRows(); updateProgress();
 }
 
+/* ---------- usage panel + saved keys ---------- */
+function setKeysMsg(key, vars, kind) { S.kmsg = key ? { key, vars, kind } : null; renderKeysMsg(); }
+function renderKeysMsg() {
+  const s = $('keysMsg');
+  s.textContent = S.kmsg ? t(S.kmsg.key, S.kmsg.vars) : '';
+  s.dataset.kind = (S.kmsg && S.kmsg.kind) || '';
+}
+// rebuild a container only when its content really changed, so keyboard focus is not lost on timer refreshes
+function swapIfChanged(box, build) {
+  const tmp = document.createElement('div');
+  build(tmp);
+  if (tmp.innerHTML === box.innerHTML) return;
+  box.textContent = '';
+  while (tmp.firstChild) box.appendChild(tmp.firstChild);
+}
+function maskKey(k) { return k.length > 10 ? k.slice(0, 4) + '…' + k.slice(-4) : '…'; }
+function sumTokens(m) { return (m.tin || 0) + (m.tout || 0); }
+
+function renderUsage() {
+  const key = $('apiKey').value.trim(), model = $('model').value;
+  swapIfChanged($('usageBody'), box => {
+    if (!key) { const p = el('p', 'help'); p.textContent = t('usage.nokey'); box.appendChild(p); return; }
+    const r = usageRec(keyFp(key));
+    const names = Object.keys(r.m);
+    if (model && names.indexOf(model) === -1) names.unshift(model);
+    if (!names.length) { const p = el('p', 'help'); p.textContent = t('usage.empty'); box.appendChild(p); return; }
+    names.forEach(n => {
+      const m = r.m[n] || { req: 0, tin: 0, tout: 0, lines: 0 };
+      const ex = exhausted(r, n);
+      const row = el('div', 'urow');
+      const nm = el('div', 'uname' + (n === model ? ' sel' : '')); nm.textContent = n;
+      const st = el('div', 'ustat');
+      [['usage.req', m.req], ['usage.tok', sumTokens(m)], ['usage.lines', m.lines]].forEach(x => {
+        const sp = el('span'); sp.appendChild(document.createTextNode(t(x[0]) + ' '));
+        const b = el('b'); b.textContent = fmtNum(x[1]); sp.appendChild(b); st.appendChild(sp);
+      });
+      const fl = el('div', 'uflag');
+      if (ex) { fl.dataset.kind = 'err'; fl.textContent = t(ex.kind === 'none' ? 'usage.none' : 'usage.exh', { time: fmtClock(ex.until) }); }
+      else if (m.req) { fl.dataset.kind = 'ok'; fl.textContent = t('usage.ok'); }
+      row.appendChild(nm); row.appendChild(st); if (fl.textContent) row.appendChild(fl);
+      box.appendChild(row);
+    });
+  });
+  const rs = $('usageReset');
+  if (!key) rs.textContent = '';
+  else {
+    const next = nextPacificReset(Date.now());
+    rs.textContent = t('usage.reset', { time: fmtClock(next), left: fmtDuration(Math.max(60, Math.round((next - Date.now()) / 60000) * 60)) });
+  }
+  renderKeyList();
+}
+
+function keyStatus(k) {
+  const r = usageRec(keyFp(k.key)), model = $('model').value;
+  if (r.invalid) return { kind: 'err', text: t('ks.invalid') };
+  const ex = model ? exhausted(r, model) : null;
+  if (ex) return { kind: 'err', text: t(ex.kind === 'none' ? 'ks.none' : 'ks.exh', { time: fmtClock(ex.until) }) };
+  if (r.lastExh && r.lastExh <= Date.now() && (!r.lastOk || r.lastOk < r.lastExh)) return { kind: '', text: t('ks.reset') };
+  if (r.lastOk) return { kind: 'ok', text: t('ks.ok', { time: fmtStamp(r.lastOk) }) };
+  return { kind: '', text: t('ks.unknown') };
+}
+
+function renderKeyList() {
+  const cur = $('apiKey').value.trim(), curFp = cur ? keyFp(cur) : '', model = $('model').value;
+  $('sumKeys').textContent = t(KEYS.length ? 'keys.count' : 'keys.none', { n: KEYS.length });
+  swapIfChanged($('keyList'), box => {
+    if (!KEYS.length) { const p = el('p', 'help'); p.textContent = t('keys.empty'); box.appendChild(p); return; }
+    KEYS.forEach(k => {
+      const fp = keyFp(k.key), r = usageRec(fp), isCur = fp === curFp;
+      const row = el('div', 'krow');
+      const head = el('div', 'khead');
+      const nm = el('span', 'kname'); nm.textContent = k.label;
+      const mk = el('span', 'kmask'); mk.textContent = maskKey(k.key);
+      head.appendChild(nm); head.appendChild(mk);
+      if (isCur) { const b = el('span', 'badge'); b.textContent = t('keys.active'); head.appendChild(b); }
+      row.appendChild(head);
+      const tst = TEST[fp];
+      const stt = tst && tst.text ? { kind: tst.kind, text: tst.text } : keyStatus(k);
+      const st = el('div', 'kstat'); st.dataset.kind = stt.kind; st.textContent = stt.text;
+      row.appendChild(st);
+      let req = 0, tok = 0, others = 0;
+      Object.keys(r.m).forEach(n => { req += r.m[n].req; tok += sumTokens(r.m[n]); });
+      Object.keys(r.exh).forEach(n => { if (n !== model && exhausted(r, n)) others++; });
+      const us = el('div', 'kuse');
+      us.textContent = t('ks.today', { req: fmtNum(req), tok: fmtNum(tok) }) + (others ? '  ·  ' + t('ks.others', { n: others }) : '');
+      row.appendChild(us);
+      const acts = el('div', 'kacts');
+      const use = el('button', 'btn'); use.type = 'button'; use.textContent = t('keys.use'); use.disabled = isCur || S.running;
+      use.addEventListener('click', () => useKey(k));
+      const tb = el('button', 'btn'); tb.type = 'button'; tb.textContent = t('keys.test'); tb.disabled = !!(tst && tst.busy);
+      tb.addEventListener('click', () => testKey(k));
+      const rm = el('button', 'btn'); rm.type = 'button'; rm.textContent = t('keys.remove');
+      rm.addEventListener('click', () => removeKey(k));
+      acts.appendChild(use); acts.appendChild(tb); acts.appendChild(rm);
+      row.appendChild(acts);
+      box.appendChild(row);
+    });
+  });
+}
+
+function addKey() {
+  const key = $('newKey').value.trim(), label = $('newLabel').value.trim();
+  if (!key) { setKeysMsg('keys.err.empty', null, 'err'); return; }
+  const dup = KEYS.filter(k => keyFp(k.key) === keyFp(key))[0];
+  if (dup) { setKeysMsg('keys.err.dup', { name: dup.label }, 'err'); return; }
+  KEYS.push({ label: label || ('Key ' + (KEYS.length + 1)), key: key, added: Date.now() });
+  saveKeys();
+  $('newKey').value = ''; $('newLabel').value = '';
+  setKeysMsg('keys.added', null, 'ok');
+  renderUsage();
+}
+function useKey(k) {
+  if (S.running) return;
+  $('apiKey').value = k.key;
+  saveSettings();
+  loadModels();
+}
+async function removeKey(k) {
+  if (!(await ask(t('keys.remove.confirm', { name: k.label }), 'keys.remove.ok'))) return;
+  KEYS = KEYS.filter(x => x !== k);
+  if (keyFp(k.key) !== keyFp($('apiKey').value.trim())) { delete USAGE[keyFp(k.key)]; saveUsage(); }
+  saveKeys(); renderUsage();
+}
+async function testKey(k) {
+  const fp = keyFp(k.key), model = $('model').value;
+  TEST[fp] = { text: t('key.checking'), kind: '', busy: true };
+  renderKeyList();
+  const done = (text, kind) => { TEST[fp] = { text: text, kind: kind }; setTimeout(() => { delete TEST[fp]; renderKeyList(); }, 20000); };
+  try {
+    const res = await fetch(API + '/models?pageSize=1000', { headers: { 'x-goog-api-key': k.key } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const e = new Error((data.error && data.error.message) || res.statusText); e.status = res.status; throw e; }
+    markOk(k.key);
+    const names = (data.models || []).map(m => m.name.replace(/^models\//, ''));
+    if (!model || names.indexOf(model) === -1) { done(t('test.keyok'), 'ok'); return; }
+    const r2 = await fetch(API + '/models/' + encodeURIComponent(model) + ':generateContent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': k.key },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 1 } })
+    });
+    const d2 = await r2.json().catch(() => ({}));
+    if (r2.ok) {
+      const um = d2.usageMetadata || {};
+      trackUse(k.key, model, { req: 1, tin: um.promptTokenCount || 0, tout: Math.max(0, (um.totalTokenCount || 0) - (um.promptTokenCount || 0)) });
+      done(t('test.ok', { model: model }), 'ok');
+    } else if (r2.status === 429) {
+      const kind = classify429(d2, d2.error && d2.error.message);
+      if (kind === 'rate') done(t('test.rate'), 'err');
+      else { markExhausted(k.key, model, kind); done('', ''); }
+    } else {
+      const e = new Error((d2.error && d2.error.message) || r2.statusText); e.status = r2.status; throw e;
+    }
+  } catch (e) {
+    if (e.status === 400 || e.status === 403) { markInvalid(k.key); done('', ''); }
+    else done(t('test.fail', { msg: e.message }), 'err');
+  } finally {
+    if (TEST[fp] && TEST[fp].busy) delete TEST[fp];
+    renderKeyList();
+  }
+}
+
 /* ---------- wiring ---------- */
 loadSettings();
+loadKeys();
 if (window.matchMedia && window.matchMedia('(max-width:899px)').matches) {
   $('s-ctx').open = false;
   if ($('apiKey').value.trim()) $('s-key').open = false; // remembered key: less scrolling on phones
@@ -1327,9 +1765,14 @@ dz.addEventListener('drop', e => handleFile(e.dataTransfer.files[0]));
 $('start').addEventListener('click', start);
 $('stop').addEventListener('click', stop);
 $('download').addEventListener('click', download);
+$('nameNo').addEventListener('click', () => $('nameDlg').close('cancel'));
+$('nameSkip').addEventListener('click', () => $('nameDlg').close('skip'));
 $('clear').addEventListener('click', clearProgress);
 $('scan').addEventListener('click', scanBad);
 $('q').addEventListener('input', applyFilter);
+$('addKey').addEventListener('click', addKey);
+$('newKey').addEventListener('keydown', e => { if (e.key === 'Enter') addKey(); });
+setInterval(renderUsage, 30000); // keeps the reset countdown fresh, and notices when the Pacific day changes
 document.querySelectorAll('.filters button').forEach(b => b.addEventListener('click', () => {
   S.filter = b.dataset.f;
   document.querySelectorAll('.filters button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
