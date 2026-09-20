@@ -4,211 +4,392 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sinhala Subtitle Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+try { var th = localStorage.getItem('srt2si:theme'); if (th === 'light' || th === 'dark') document.documentElement.setAttribute('data-theme', th); } catch (e) {}
+</script>
 <style>
-
 :root{
-  color-scheme: light dark;
-  --bg:#EDEFF8; --surface:#FFFFFF; --ink:#1B2036; --muted:#5C6380; --line:#D3D8EA;
-  --primary:#3A3F94; --on-primary:#FFFFFF; --field:#F7F8FD;
-  --sub-bg:rgba(10,12,26,.90); --sub-ink:#FFE873;
-  --todo:#E8A317; --ok:#1C7A52; --err:#B3261E; --focus:#6E77E8;
+  color-scheme: light;
+  --bg:#F1F3F9; --surface:#FFFFFF; --ink:#171B2E; --muted:#59617D; --line:#D9DDEB; --field:#F7F8FC;
+  --primary:#3D43C6; --on-primary:#FFFFFF; --focus:#6169F0;
+  --screen:#0E1019; --sub-ink:#FFD84A;
+  --todo:#B87400; --ok:#17744C; --err:#B3261E;
 }
 @media (prefers-color-scheme: dark){
-  :root{
-    --bg:#101226; --surface:#181B36; --ink:#E6E8F7; --muted:#98A0C4; --line:#2C315C;
-    --primary:#A4ADFF; --on-primary:#101226; --field:#12142A;
-    --sub-bg:rgba(0,0,0,.62); --sub-ink:#FFE873;
-    --todo:#E0A22C; --ok:#5AD29B; --err:#FF8A80; --focus:#8992FF;
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0D0F1D; --surface:#151830; --ink:#E7E9F8; --muted:#9BA3C7; --line:#2A2F58; --field:#101226;
+    --primary:#9AA3FF; --on-primary:#0D0F1D; --focus:#8992FF;
+    --screen:#05060B; --sub-ink:#FFD84A;
+    --todo:#E8A83A; --ok:#5AD29B; --err:#FF8A80;
   }
 }
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0D0F1D; --surface:#151830; --ink:#E7E9F8; --muted:#9BA3C7; --line:#2A2F58; --field:#101226;
+  --primary:#9AA3FF; --on-primary:#0D0F1D; --focus:#8992FF;
+  --screen:#05060B; --sub-ink:#FFD84A;
+  --todo:#E8A83A; --ok:#5AD29B; --err:#FF8A80;
+}
+
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%; scroll-padding-top:72px}
 body{
   margin:0; background:var(--bg); color:var(--ink);
-  font-family:"Noto Sans Sinhala","Iskoola Pota","Nirmala UI",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-family:"Plus Jakarta Sans","Noto Sans Sinhala","Iskoola Pota","Nirmala UI",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   font-size:16px; line-height:1.75;
-  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
   counter-reset:step;
 }
-main{max-width:760px; margin:0 auto; padding:32px 20px 80px}
-h1{font-size:1.7rem; line-height:1.4; margin:0 0 8px}
-h2{font-size:1.15rem; line-height:1.5; margin:0 0 6px}
+html[lang=en] body{line-height:1.6}
+h1{font-size:1.75rem; line-height:1.4; margin:0 0 8px; font-weight:700}
+h2{font-size:1.1rem; line-height:1.5; margin:0; font-weight:700}
 p{margin:0 0 10px}
 a{color:var(--primary)}
-.lead{color:var(--muted); max-width:60ch}
-.step{margin-top:28px; padding-top:26px; border-top:1px solid var(--line)}
-.step h2{display:flex; align-items:baseline; gap:12px}
-.step h2::before{
-  counter-increment:step; content:counter(step);
-  flex:none; width:28px; height:28px; border-radius:50%;
+.lead{color:var(--muted); max-width:62ch; margin:0}
+.help{color:var(--muted); font-size:.9rem; max-width:64ch}
+[hidden]{display:none !important}
+:focus-visible{outline:3px solid var(--focus); outline-offset:2px}
+.skip{position:absolute; left:-9999px; top:8px; background:var(--primary); color:var(--on-primary); padding:8px 14px; border-radius:8px; z-index:50}
+.skip:focus{left:12px}
+
+/* step numbers: the content is a real sequence (key, context, file, translate, review) */
+.n{
+  flex:none; width:26px; height:26px; border-radius:50%;
   display:inline-grid; place-items:center;
   background:var(--primary); color:var(--on-primary);
-  font:700 .85rem/1 system-ui,sans-serif; transform:translateY(-1px);
+  font:700 .8rem/1 system-ui,sans-serif;
 }
-.help{color:var(--muted); font-size:.92rem; max-width:64ch}
+.n::before{counter-increment:step; content:counter(step)}
+
+/* top bar */
+.top{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 20px 10px;
+  background:var(--surface); border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.01em}
+.mark{width:30px; height:30px; flex:none}
+.mark .m-bg{fill:var(--screen)} .mark .m-ln{fill:var(--sub-ink)}
+.tools{display:flex; align-items:center; gap:10px}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface); flex:none; max-width:100%}
+.seg button{
+  min-height:38px; padding:0 14px; border:0; background:transparent; color:var(--ink);
+  font:inherit; font-size:.9rem; font-weight:600; cursor:pointer; white-space:nowrap; line-height:1.4;
+}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--primary); color:var(--on-primary)}
+.seg .cnt{font-weight:500; opacity:.8; margin-left:5px; font-variant-numeric:tabular-nums}
+.iconbtn{
+  width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:var(--surface);
+  color:var(--ink); font:1.15rem/1 system-ui,sans-serif; cursor:pointer;
+}
+.iconbtn:hover{border-color:var(--primary)}
+
+/* layout */
+.layout{max-width:1220px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr)}
+.rail{background:var(--surface); border-bottom:1px solid var(--line)}
+.work{min-width:0; padding:28px 20px 96px}
+@media (min-width:900px){
+  .layout{grid-template-columns:390px minmax(0,1fr); gap:0 44px; padding:0 24px}
+  .rail{
+    position:sticky; top:66px; align-self:start; margin-top:28px;
+    max-height:calc(100vh - 90px); overflow:auto;
+    border:1px solid var(--line); border-radius:12px;
+  }
+  .work{padding:28px 0 96px}
+}
+
+/* setup panels */
+.panel{border-bottom:1px solid var(--line)}
+.panel:last-child{border-bottom:0}
+.panel > summary{
+  list-style:none; display:flex; align-items:center; gap:10px;
+  padding:14px 20px; min-height:56px; cursor:pointer;
+}
+.panel > summary::-webkit-details-marker{display:none}
+.panel > summary::after{
+  content:""; flex:none; width:8px; height:8px; margin-left:4px;
+  border-right:2px solid var(--muted); border-bottom:2px solid var(--muted);
+  transform:rotate(45deg); transition:transform .15s;
+}
+.panel[open] > summary::after{transform:rotate(-135deg)}
+.panel > .body{padding:0 20px 22px}
+.sumchip{flex:1; min-width:0; text-align:right; font-size:.82rem; color:var(--muted); line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sumchip[data-kind=ok]{color:var(--ok)}
+
+/* forms */
 label{display:block; font-weight:600; margin:16px 0 6px}
-input[type=text],input[type=password],input[type=number],select,textarea{
+input[type=text],input[type=password],input[type=number],input[type=search],select,textarea{
   width:100%; font:inherit; padding:10px 12px; color:var(--ink);
   background:var(--field); border:1px solid var(--line); border-radius:8px;
 }
 textarea{resize:vertical; min-height:5.5em}
-:focus-visible{outline:3px solid var(--focus); outline-offset:2px}
 .inline{display:flex; gap:10px; align-items:stretch}
 .inline input{flex:1; min-width:0}
 .check{display:flex; gap:10px; align-items:flex-start; font-weight:400; margin:14px 0 0}
 .check input{margin-top:.55em; width:18px; height:18px; flex:none}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
 .btn{
   min-height:44px; padding:0 18px; border-radius:8px; cursor:pointer;
-  border:1px solid var(--line); background:transparent; color:var(--ink);
-  font:inherit; font-weight:600;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  font:inherit; font-weight:600; line-height:1.4;
 }
+.btn:hover:not(:disabled){border-color:var(--primary)}
 .btn.primary{background:var(--primary); color:var(--on-primary); border-color:transparent}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
 .btn:disabled{opacity:.45; cursor:not-allowed}
-.linkbtn{background:none; border:0; padding:6px 0; color:var(--muted); font:inherit; font-size:.9rem; text-decoration:underline; cursor:pointer}
+.linkbtn{background:none; border:0; padding:8px 0; color:var(--muted); font:inherit; font-size:.88rem; text-decoration:underline; cursor:pointer}
+.linkbtn:hover:not(:disabled){color:var(--ink)}
 .linkbtn:disabled{opacity:.4; cursor:not-allowed}
+.actions{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:14px}
+.actions .spacer{flex:1}
 .msg{min-height:1.75em; margin:10px 0 0; font-size:.95rem}
 [data-kind=ok]{color:var(--ok)}
 [data-kind=err]{color:var(--err)}
-.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
-@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+
+/* workspace sections */
+.intro{margin-bottom:6px}
+.step{margin-top:32px; padding-top:28px; border-top:1px solid var(--line)}
+.step > h2{display:flex; align-items:center; gap:12px}
 .drop{
-  display:block; margin:14px 0 0; padding:30px 18px; text-align:center; cursor:pointer;
-  border:2px dashed var(--line); border-radius:10px; font-weight:400; color:var(--muted);
+  position:relative; display:flex; flex-direction:column; align-items:center; gap:2px;
+  margin:16px 0 0; padding:30px 18px; text-align:center; cursor:pointer;
+  border:2px dashed var(--line); border-radius:12px; font-weight:400; color:var(--muted);
+  background:var(--surface);
 }
-.drop.over{border-color:var(--primary); color:var(--ink); background:var(--field)}
+.drop:hover,.drop.over{border-color:var(--primary); color:var(--ink)}
+.drop.over{background:var(--field)}
+.drop:focus-within{outline:3px solid var(--focus); outline-offset:2px}
+.drop.has{border-style:solid}
 .drop input{position:absolute; width:1px; height:1px; opacity:0; pointer-events:none}
-.drop strong{display:block; color:var(--ink); font-weight:600; margin-bottom:2px; word-break:break-all}
-.actions{display:flex; flex-wrap:wrap; gap:10px; margin-top:14px}
-.bar{height:8px; border-radius:4px; background:var(--line); overflow:hidden; margin-top:18px}
-.bar i{display:block; height:100%; width:0; background:var(--primary); transition:width .3s}
-@media (prefers-reduced-motion: reduce){.bar i{transition:none}}
-.count{display:flex; justify-content:space-between; gap:12px; margin-top:8px; font-size:.92rem; color:var(--muted)}
-.now{
-  margin:18px 0 6px; padding:14px 20px; border-radius:6px; text-align:center;
-  background:var(--sub-bg); color:var(--sub-ink); font-size:1.2rem; line-height:1.65;
-  white-space:pre-line; text-shadow:0 1px 2px rgba(0,0,0,.8);
+.drop svg{width:34px; height:34px; margin-bottom:6px; color:var(--primary)}
+.drop strong{display:block; color:var(--ink); font-weight:600; word-break:break-all}
+
+/* the subtitle screen */
+.screen{
+  margin-top:16px; background:var(--screen); color:#fff; border-radius:12px; overflow:hidden;
+  display:flex; flex-direction:column; min-height:190px;
 }
-.now small{display:block; font:.72rem/1.4 ui-monospace,Menlo,Consolas,monospace; color:#fff; opacity:.6; margin-bottom:4px; text-shadow:none}
-details{margin-top:12px; font-size:.88rem; color:var(--muted)}
-details ul{margin:8px 0 0; padding-left:18px; max-height:180px; overflow:auto}
-.rows{margin-top:10px}
-.row{padding:14px 0 14px 12px; border-bottom:1px solid var(--line); border-left:3px solid transparent}
+.screen-top{
+  display:flex; justify-content:space-between; gap:12px; padding:12px 16px 0;
+  font:.75rem/1.4 ui-monospace,Menlo,Consolas,monospace; color:#fff; opacity:.6;
+}
+.screen-body{flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding:8px 20px 16px}
+.screen-en{text-align:center; font-size:.85rem; line-height:1.5; color:#fff; opacity:.55; white-space:pre-line; min-height:1.5em}
+.screen-sub{
+  text-align:center; color:var(--sub-ink); font-size:1.3rem; line-height:1.65;
+  white-space:pre-line; text-shadow:0 1px 3px rgba(0,0,0,.9); min-height:2.1em;
+}
+.screen.empty .screen-sub{color:#fff; opacity:.5; font-size:1rem; text-shadow:none}
+.scrub{height:6px; background:rgba(255,255,255,.16)}
+.scrub i{display:block; height:100%; width:0; background:var(--sub-ink); transition:width .3s}
+@media (prefers-reduced-motion: reduce){.scrub i,.panel > summary::after{transition:none}}
+
+.stats{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:1px; margin:14px 0 0; padding:0;
+  background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden;
+}
+.stats > div{background:var(--surface); padding:10px 14px; min-width:0}
+.stats dt{font-size:.78rem; color:var(--muted); line-height:1.5}
+.stats dd{margin:0; font-size:1.2rem; font-weight:700; line-height:1.5; font-variant-numeric:tabular-nums}
+@media (max-width:560px){
+  .stats{grid-template-columns:1fr 1fr}
+}
+
+details.log{margin-top:12px; font-size:.88rem; color:var(--muted)}
+details.log ul{margin:8px 0 0; padding-left:18px; max-height:180px; overflow:auto}
+
+/* review */
+.legend{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.9rem; margin:8px 0 0}
+.legend::before{content:""; flex:none; width:3px; height:18px; background:var(--todo); border-radius:2px}
+.toolbar{display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:16px}
+.toolbar input[type=search]{flex:1 1 200px; min-width:0}
+.filters{overflow-x:auto}
+.rows{margin-top:14px}
+.row{
+  display:grid; grid-template-columns:minmax(0,1fr); gap:8px 24px;
+  padding:14px 0 14px 14px; border-bottom:1px solid var(--line); border-left:3px solid transparent;
+}
+@media (min-width:720px){.row{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}}
 .row.todo{border-left-color:var(--todo)}
 .row.bad{border-left-color:var(--err)}
-.review-tools{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:8px}
 .meta{font:.78rem/1.5 ui-monospace,Menlo,Consolas,monospace; color:var(--muted)}
-.en{color:var(--muted); font-size:.92rem; white-space:pre-line; margin:2px 0 6px}
+.en{color:var(--muted); font-size:.92rem; white-space:pre-line; margin:2px 0 0}
 .row textarea{min-height:2.9em; field-sizing:content; resize:vertical}
-.legend{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.9rem}
-.legend::before{content:""; width:3px; height:18px; background:var(--todo); border-radius:2px}
-[hidden]{display:none !important}
+.acts{display:flex; align-items:center; gap:14px; min-height:34px}
+.tag{font-size:.75rem; line-height:1.4; padding:1px 8px; border:1px solid var(--todo); color:var(--todo); border-radius:999px}
+.rowsempty{color:var(--muted); padding:18px 0}
 
-header{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px 24px}
-header > div:first-child{flex:1 1 320px; min-width:0}
-.lang{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; flex:none}
-.lang button{
-  min-height:40px; padding:0 16px; border:0; background:transparent; color:var(--ink);
-  font:inherit; font-weight:600; cursor:pointer;
+/* confirm dialog */
+dialog{
+  width:min(420px,calc(100vw - 32px)); padding:22px; border:1px solid var(--line); border-radius:12px;
+  background:var(--surface); color:var(--ink);
 }
-.lang button + button{border-left:1px solid var(--line)}
-.lang button[aria-pressed=true]{background:var(--primary); color:var(--on-primary)}
-.ver{max-width:760px; margin:-56px auto 0; padding:0 20px 28px; color:var(--muted); font:.78rem/1.4 ui-monospace,Menlo,Consolas,monospace}
-html[lang=en] body{
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Sinhala","Iskoola Pota","Nirmala UI",sans-serif;
-  line-height:1.6;
-}
+dialog::backdrop{background:rgba(8,10,24,.55)}
+dialog p{margin:0 0 4px}
+dialog .actions{justify-content:flex-end; margin-top:18px}
+
+.ver{max-width:1220px; margin:0 auto; padding:0 24px 28px; color:var(--muted); font:.78rem/1.4 ui-monospace,Menlo,Consolas,monospace}
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <div>
-      <h1 data-i18n="app.title">Sinhala Subtitle Translator</h1>
-      <p class="lead" data-i18n="app.lead"></p>
-    </div>
-    <div class="lang" role="group" aria-label="Language / භාෂාව">
+<a class="skip" href="#workspace" data-i18n="skip"></a>
+
+<header class="top">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect class="m-bg" width="32" height="32" rx="8"/><rect class="m-ln" x="6" y="16.5" width="20" height="3.5" rx="1.75"/><rect class="m-ln" x="10" y="22.5" width="12" height="3.5" rx="1.75"/></svg>
+    <span>SRT2Si</span>
+  </div>
+  <div class="tools">
+    <div class="seg lang" role="group" aria-label="Language / භාෂාව">
       <button type="button" data-lang="si" lang="si">සිංහල</button>
       <button type="button" data-lang="en" lang="en">English</button>
     </div>
-  </header>
+    <button class="iconbtn" id="themeBtn" type="button"></button>
+  </div>
+</header>
 
-  <section class="step" id="s-key">
-    <h2>Gemini API key</h2>
-    <p class="help" data-i18n-html="key.help"></p>
-    <label for="apiKey">API key</label>
-    <div class="inline">
-      <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…">
-      <button class="btn" id="toggleKey" type="button"></button>
-    </div>
-    <label class="check" for="remember"><input type="checkbox" id="remember"><span data-i18n="key.remember"></span></label>
-    <div class="actions"><button class="btn" id="checkKey" type="button" data-i18n="key.check"></button></div>
-    <p class="msg" id="keyMsg" role="status" aria-live="polite"></p>
-    <label for="model">Model</label>
-    <select id="model"><option value="" data-i18n="model.placeholder"></option></select>
-    <p class="help" style="margin-top:8px" data-i18n-html="model.help"></p>
-    <p class="help" style="margin-top:10px" data-i18n="key.privacy"></p>
-  </section>
-
-  <section class="step" id="s-ctx">
-    <h2 data-i18n="ctx.h2"></h2>
-    <p class="help" data-i18n="ctx.help"></p>
-    <label for="ctxTitle" data-i18n="ctx.title.label"></label>
-    <input id="ctxTitle" type="text" data-i18n-ph="ctx.title.ph">
-    <label for="ctxChars" data-i18n="ctx.chars.label"></label>
-    <textarea id="ctxChars" data-i18n-ph="ctx.chars.ph"></textarea>
-    <label for="ctxNotes" data-i18n="ctx.notes.label"></label>
-    <textarea id="ctxNotes" data-i18n-ph="ctx.notes.ph"></textarea>
-    <label class="check" for="mixEn"><input type="checkbox" id="mixEn" checked><span data-i18n="ctx.mix"></span></label>
-  </section>
-
-  <section class="step" id="s-file">
-    <h2 data-i18n="file.h2"></h2>
-    <label class="drop" id="drop" for="fileInput">
-      <input id="fileInput" type="file">
-      <strong id="fileName"></strong>
-      <span id="fileInfo"></span>
-    </label>
-    <div class="grid2">
-      <div>
-        <label for="chunkSize" data-i18n="file.chunk"></label>
-        <input id="chunkSize" type="number" min="10" max="300" value="100" inputmode="numeric">
+<div class="layout">
+  <aside class="rail" aria-label="Setup">
+    <details class="panel" id="s-key" open>
+      <summary><span class="n" aria-hidden="true"></span><h2>Gemini API key</h2><span class="sumchip" id="sumKey"></span></summary>
+      <div class="body">
+        <p class="help" data-i18n-html="key.help"></p>
+        <label for="apiKey">API key</label>
+        <div class="inline">
+          <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…">
+          <button class="btn" id="toggleKey" type="button"></button>
+        </div>
+        <label class="check" for="remember"><input type="checkbox" id="remember"><span data-i18n="key.remember"></span></label>
+        <div class="actions"><button class="btn" id="checkKey" type="button" data-i18n="key.check"></button></div>
+        <p class="msg" id="keyMsg" role="status" aria-live="polite"></p>
+        <label for="model">Model</label>
+        <select id="model"><option value="" data-i18n="model.placeholder"></option></select>
+        <p class="help" style="margin-top:8px" data-i18n-html="model.help"></p>
+        <p class="help" style="margin-top:10px" data-i18n="key.privacy"></p>
       </div>
-      <div>
-        <label for="gap" data-i18n="file.gap"></label>
-        <input id="gap" type="number" min="0" max="120" value="4" inputmode="numeric">
-      </div>
-    </div>
-    <div class="grid2">
-      <div>
-        <label for="temp" data-i18n="file.temp"></label>
-        <input id="temp" type="number" min="0" max="1" step="0.1" value="0.3" inputmode="decimal">
-      </div>
-    </div>
-    <p class="help" style="margin-top:8px" data-i18n="file.help"></p>
-  </section>
+    </details>
 
-  <section class="step" id="s-run">
-    <h2 data-i18n="run.h2"></h2>
+    <details class="panel" id="s-ctx" open>
+      <summary><span class="n" aria-hidden="true"></span><h2 data-i18n="ctx.h2"></h2><span class="sumchip" id="sumCtx"></span></summary>
+      <div class="body">
+        <p class="help" data-i18n="ctx.help"></p>
+        <label for="ctxTitle" data-i18n="ctx.title.label"></label>
+        <input id="ctxTitle" type="text" data-i18n-ph="ctx.title.ph">
+        <label for="ctxChars" data-i18n="ctx.chars.label"></label>
+        <textarea id="ctxChars" data-i18n-ph="ctx.chars.ph"></textarea>
+        <label for="ctxNotes" data-i18n="ctx.notes.label"></label>
+        <textarea id="ctxNotes" data-i18n-ph="ctx.notes.ph"></textarea>
+        <label class="check" for="mixEn"><input type="checkbox" id="mixEn" checked><span data-i18n="ctx.mix"></span></label>
+      </div>
+    </details>
+
+    <details class="panel" id="s-adv">
+      <summary><h2 data-i18n="panel.adv"></h2></summary>
+      <div class="body">
+        <div class="grid2">
+          <div>
+            <label for="chunkSize" data-i18n="file.chunk"></label>
+            <input id="chunkSize" type="number" min="10" max="300" value="100" inputmode="numeric">
+          </div>
+          <div>
+            <label for="gap" data-i18n="file.gap"></label>
+            <input id="gap" type="number" min="0" max="120" value="4" inputmode="numeric">
+          </div>
+        </div>
+        <div class="grid2">
+          <div>
+            <label for="temp" data-i18n="file.temp"></label>
+            <input id="temp" type="number" min="0" max="1" step="0.1" value="0.3" inputmode="decimal">
+          </div>
+        </div>
+        <p class="help" style="margin-top:10px" data-i18n="file.help"></p>
+      </div>
+    </details>
+  </aside>
+
+  <main class="work" id="workspace">
+    <div class="intro">
+      <h1 data-i18n="app.title">Sinhala Subtitle Translator</h1>
+      <p class="lead" data-i18n="app.lead"></p>
+    </div>
+
+    <section class="step" id="s-file">
+      <h2><span class="n" aria-hidden="true"></span><span data-i18n="file.h2"></span></h2>
+      <label class="drop" id="drop" for="fileInput">
+        <input id="fileInput" type="file" accept=".srt,text/plain,application/x-subrip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-5"/><path d="m9.5 14.5 2.5-2.5 2.5 2.5"/></svg>
+        <strong id="fileName"></strong>
+        <span id="fileInfo"></span>
+      </label>
+    </section>
+
+    <section class="step" id="s-run">
+      <h2><span class="n" aria-hidden="true"></span><span data-i18n="run.h2"></span></h2>
+
+      <div class="screen empty" id="now" aria-live="off">
+        <div class="screen-top"><span id="nowTime"></span><span id="nowPct">0%</span></div>
+        <div class="screen-body">
+          <div class="screen-en" id="nowEn" lang="en"></div>
+          <div class="screen-sub" id="nowText" lang="si"></div>
+        </div>
+        <div class="scrub" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="barWrap"><i id="bar"></i></div>
+      </div>
+
+      <dl class="stats">
+        <div><dt data-i18n="stat.done"></dt><dd id="stDone">0 / 0</dd></div>
+        <div><dt data-i18n="stat.left"></dt><dd id="stLeft">0</dd></div>
+        <div><dt data-i18n="stat.check"></dt><dd id="stBad">0</dd></div>
+        <div><dt data-i18n="stat.eta"></dt><dd id="stEta">–</dd></div>
+      </dl>
+
+      <div class="actions">
+        <button class="btn primary" id="start" type="button" disabled></button>
+        <button class="btn" id="stop" type="button" disabled data-i18n="run.stop"></button>
+        <button class="btn" id="download" type="button" disabled data-i18n="dl.btn"></button>
+        <span class="spacer"></span>
+        <button class="linkbtn" id="clear" type="button" disabled data-i18n="run.clear"></button>
+      </div>
+      <p class="msg" id="status" role="status" aria-live="polite"></p>
+      <details class="log"><summary data-i18n="run.log"></summary><ul id="log"></ul></details>
+    </section>
+
+    <section class="step" id="s-review" hidden>
+      <h2><span class="n" aria-hidden="true"></span><span data-i18n="review.h2"></span></h2>
+      <p class="legend" data-i18n="review.legend"></p>
+      <p class="help" style="margin-top:6px" data-i18n="review.legend2"></p>
+      <div class="toolbar">
+        <input id="q" type="search" autocomplete="off" data-i18n-ph="review.search">
+        <div class="seg filters" role="group" aria-label="Filter">
+          <button type="button" data-f="all" aria-pressed="true"><span data-i18n="filter.all"></span><span class="cnt" id="cAll"></span></button>
+          <button type="button" data-f="todo" aria-pressed="false"><span data-i18n="filter.todo"></span><span class="cnt" id="cTodo"></span></button>
+          <button type="button" data-f="bad" aria-pressed="false"><span data-i18n="filter.bad"></span><span class="cnt" id="cBad"></span></button>
+          <button type="button" data-f="long" aria-pressed="false"><span data-i18n="filter.long"></span><span class="cnt" id="cLong"></span></button>
+        </div>
+        <button class="btn" id="scan" type="button" data-i18n="review.scan"></button>
+      </div>
+      <div class="rows" id="rows"></div>
+      <p class="rowsempty" id="rowsEmpty" hidden data-i18n="review.empty"></p>
+    </section>
+  </main>
+</div>
+<footer class="ver">v6 (2026-09-20)</footer>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <p id="dlgMsg"></p>
     <div class="actions">
-      <button class="btn primary" id="start" type="button" disabled></button>
-      <button class="btn" id="stop" type="button" disabled data-i18n="run.stop"></button>
-      <button class="btn" id="download" type="button" disabled>Download .srt</button>
+      <button class="btn" id="dlgNo" value="cancel" autofocus></button>
+      <button class="btn primary" id="dlgYes" value="ok"></button>
     </div>
-    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="barWrap"><i id="bar"></i></div>
-    <div class="count"><span id="count">0 / 0 lines</span><button class="linkbtn" id="clear" type="button" disabled data-i18n="run.clear"></button></div>
-    <div class="now" id="now" hidden><small id="nowTime"></small><span id="nowText"></span></div>
-    <p class="msg" id="status" role="status" aria-live="polite"></p>
-    <details><summary data-i18n="run.log"></summary><ul id="log"></ul></details>
-  </section>
-
-  <section class="step" id="s-review" hidden>
-    <h2 data-i18n="review.h2"></h2>
-    <p class="legend" data-i18n="review.legend"></p>
-    <div class="review-tools"><button class="btn" id="scan" type="button" data-i18n="review.scan"></button></div>
-    <div class="rows" id="rows"></div>
-  </section>
-</main>
-<footer class="ver">v5 · 2026-09-20 · si / en</footer>
+  </form>
+</dialog>
 
 <script>
 'use strict';
@@ -342,7 +523,6 @@ function hashStr(s) {
 }
 // ==CORE END==
 
-/* ---------- translations (UI language). The AI prompt above always stays in English. ---------- */
 const I18N = {
   si: {
     'app.title': 'සිංහල Subtitle පරිවර්තකය',
@@ -505,7 +685,77 @@ const I18N = {
     'row.aria': 'Line {id} in Sinhala'
   }
 };
+
+/* ---------- extra translations for the new UI ---------- */
+Object.assign(I18N.si, {
+  'skip': 'ප්‍රධාන කොටසට යන්න',
+  'theme.auto': 'Theme: device එකට අනුව',
+  'theme.light': 'Theme: light',
+  'theme.dark': 'Theme: dark',
+  'panel.adv': 'උසස් settings',
+  'sum.key.empty': 'Key එක දාන්න',
+  'sum.key.check': 'Key එක check කරන්න',
+  'sum.ctx.opt': 'අවශ්‍ය නම් විතරයි',
+  'sum.ctx.set': 'දාලා තියෙනවා',
+  'stat.done': 'පරිවර්තනය වුණා',
+  'stat.left': 'ඉතුරු',
+  'stat.check': 'බලන්න ඕන',
+  'stat.eta': 'ඉතුරු වෙලාව',
+  'screen.empty': 'පරිවර්තනය වෙන line එක මෙතන පේනවා',
+  'dl.btn': 'Download .srt',
+  'dl.ok': 'Download කරන්න',
+  'clear.ok': 'මකන්න',
+  'scan.ok': 'ඉවත් කරන්න',
+  'dlg.cancel': 'එපා',
+  'filter.all': 'සියල්ල',
+  'filter.todo': 'ඉතුරු',
+  'filter.bad': 'වැරදි අකුරු',
+  'filter.long': 'දිග වැඩි',
+  'review.search': 'Lines හොයන්න…',
+  'review.empty': 'මේ filter එකට line එකක්වත් නෑ.',
+  'review.legend2': 'තැඹිලි tag එකක් තියෙන lines subtitle එකකට දිග වැඩියි (පේළියකට අකුරු 48 ට වැඩි, නැත්නම් පේළි 2 කට වැඩි). ඒවා අතින් කෙටි කරන්න.',
+  'row.long': 'දිග වැඩියි',
+  'row.redo': 'ආයේ පරිවර්තනය',
+  'row.redo.aria': 'Line {id} ආයේ පරිවර්තනය කරන්න',
+  'row.kept': 'ආයේ පරිවර්තනය කරන්න බැරි වුණා. කලින් පරිවර්තනය තියාගත්තා.'
+});
+Object.assign(I18N.en, {
+  'skip': 'Skip to main content',
+  'theme.auto': 'Theme: follow device',
+  'theme.light': 'Theme: light',
+  'theme.dark': 'Theme: dark',
+  'panel.adv': 'Advanced settings',
+  'sum.key.empty': 'Enter your key',
+  'sum.key.check': 'Check the key',
+  'sum.ctx.opt': 'Optional',
+  'sum.ctx.set': 'Filled in',
+  'stat.done': 'Translated',
+  'stat.left': 'Remaining',
+  'stat.check': 'Need a look',
+  'stat.eta': 'Time left',
+  'screen.empty': 'The line being translated shows up here',
+  'dl.btn': 'Download .srt',
+  'dl.ok': 'Download',
+  'clear.ok': 'Delete',
+  'scan.ok': 'Remove',
+  'dlg.cancel': 'Cancel',
+  'filter.all': 'All',
+  'filter.todo': 'Remaining',
+  'filter.bad': 'Wrong characters',
+  'filter.long': 'Too long',
+  'review.search': 'Search lines…',
+  'review.empty': 'No lines match this filter.',
+  'review.legend2': 'An orange tag means the subtitle is long (over 48 characters on a line, or more than 2 lines). Shorten those by hand.',
+  'row.long': 'Too long',
+  'row.redo': 'Translate again',
+  'row.redo.aria': 'Translate line {id} again',
+  'row.kept': 'Could not translate it again. The previous translation was kept.'
+});
+I18N.si['dlg.ok'] = 'හරි';
+I18N.en['dlg.ok'] = 'OK';
+
 let LANG = 'si';
+let THEME = 'auto';
 function t(key, vars) {
   let s = (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
   if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
@@ -513,10 +763,13 @@ function t(key, vars) {
 }
 
 const $ = id => document.getElementById(id);
+const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
 const API = 'https://generativelanguage.googleapis.com/v1beta';
+const LONG_LINE = 48;
 const S = {
   entries: [], tr: {}, fileName: '', badFile: null, fp: '', running: false, stop: false, abort: null,
-  rows: [], lastReq: 0, saveTimer: null, modelNames: [], st: null, km: null
+  rows: [], lastReq: 0, saveTimer: null, modelNames: [], st: null, km: null,
+  now: null, filter: 'all', t0: 0, d0: 0, runIds: []
 };
 
 const store = {
@@ -534,6 +787,8 @@ function loadSettings() {
   if (k) { $('apiKey').value = k; $('remember').checked = true; }
   const l = store.get('srt2si:lang', 'si');
   LANG = (l === 'en') ? 'en' : 'si';
+  const th = store.get('srt2si:theme', 'auto');
+  THEME = (th === 'light' || th === 'dark') ? th : 'auto';
 }
 function saveSettings() {
   FIELDS.forEach(f => store.set('srt2si:' + f, $(f).value));
@@ -541,9 +796,25 @@ function saveSettings() {
   if ($('model').value) store.set('srt2si:model', $('model').value);
   if ($('remember').checked) store.set('srt2si:key', $('apiKey').value.trim());
   else store.del('srt2si:key');
+  updateSummaries();
 }
 function getCtx() {
   return { title: $('ctxTitle').value.trim(), chars: $('ctxChars').value.trim(), notes: $('ctxNotes').value.trim(), mixEnglish: $('mixEn').checked };
+}
+
+/* ---------- theme ---------- */
+function applyTheme() {
+  const r = document.documentElement;
+  if (THEME === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', THEME);
+  const b = $('themeBtn');
+  b.textContent = THEME === 'auto' ? '\u25D0\uFE0E' : THEME === 'light' ? '\u2600\uFE0E' : '\u263E\uFE0E';
+  b.setAttribute('aria-label', t('theme.' + THEME));
+  b.title = t('theme.' + THEME);
+}
+function cycleTheme() {
+  THEME = { auto: 'light', light: 'dark', dark: 'auto' }[THEME];
+  store.set('srt2si:theme', THEME);
+  applyTheme();
 }
 
 /* ---------- language ---------- */
@@ -560,6 +831,16 @@ function renderKeyMsg() {
 function setStatus(key, vars, kind) { S.st = key ? { key, vars, kind } : null; renderStatus(); }
 function setKeyMsg(key, vars, kind) { S.km = key ? { key, vars, kind } : null; renderKeyMsg(); }
 
+function updateSummaries() {
+  const k = $('apiKey').value.trim(), m = $('model').value;
+  const ks = $('sumKey');
+  if (m && S.modelNames.length) { ks.textContent = m; ks.dataset.kind = 'ok'; }
+  else { ks.textContent = t(k ? 'sum.key.check' : 'sum.key.empty'); ks.dataset.kind = ''; }
+  const ti = $('ctxTitle').value.trim();
+  const any = ti || $('ctxChars').value.trim() || $('ctxNotes').value.trim();
+  $('sumCtx').textContent = ti || t(any ? 'sum.ctx.set' : 'sum.ctx.opt');
+}
+
 function modelTag(n) {
   return /lite/.test(n) ? t('tag.lite') : /flash/.test(n) ? t('tag.flash') : /pro/.test(n) ? t('tag.pro') : '';
 }
@@ -571,6 +852,8 @@ function renderModelOptions() {
   if (S.modelNames.indexOf(cur) !== -1) sel.value = cur;
 }
 function renderFile() {
+  const has = S.entries.length > 0 && !S.badFile;
+  $('drop').classList.toggle('has', has);
   if (S.badFile) { $('fileName').textContent = S.badFile; $('fileInfo').textContent = t('file.nolines'); return; }
   if (!S.entries.length) { $('fileName').textContent = t('file.drop.title'); $('fileInfo').textContent = t('file.drop.hint'); return; }
   const d = doneCount(), b = badIds().length;
@@ -580,18 +863,40 @@ function renderFile() {
 function applyLang() {
   document.documentElement.lang = LANG;
   document.title = t('app.title');
-  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
-  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
-  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = t(e.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach(e => { e.innerHTML = t(e.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(e => { e.placeholder = t(e.dataset.i18nPh); });
   document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));
   $('toggleKey').textContent = t($('apiKey').type === 'password' ? 'key.show' : 'key.hide');
-  S.rows.forEach((r, i) => { r.ta.placeholder = t('row.ph'); r.ta.setAttribute('aria-label', t('row.aria', { id: i + 1 })); });
-  renderModelOptions(); renderStatus(); renderKeyMsg(); updateProgress();
+  S.rows.forEach((r, i) => {
+    r.ta.placeholder = t('row.ph');
+    r.ta.setAttribute('aria-label', t('row.aria', { id: i + 1 }));
+    r.tag.textContent = t('row.long');
+    r.rt.textContent = t('row.redo');
+    r.rt.setAttribute('aria-label', t('row.redo.aria', { id: i + 1 }));
+  });
+  renderModelOptions(); renderStatus(); renderKeyMsg(); updateSummaries(); applyTheme();
+  if (S.now) showNow(S.now); else resetNow();
+  updateProgress();
 }
 function setLang(l) {
   LANG = l;
   store.set('srt2si:lang', l);
   applyLang();
+}
+
+/* ---------- confirm dialog ---------- */
+function ask(msg, yesKey) {
+  const d = $('dlg');
+  if (typeof d.showModal !== 'function') return Promise.resolve(confirm(msg));
+  $('dlgMsg').textContent = msg;
+  $('dlgYes').textContent = t(yesKey || 'dlg.ok');
+  $('dlgNo').textContent = t('dlg.cancel');
+  d.returnValue = '';
+  return new Promise(res => {
+    d.addEventListener('close', () => res(d.returnValue === 'ok'), { once: true });
+    d.showModal();
+  });
 }
 
 /* ---------- small UI helpers ---------- */
@@ -615,6 +920,15 @@ async function gapWait() {
   const left = S.lastReq + gap - Date.now();
   if (left > 0) await waitSeconds(left / 1000, null);
 }
+function fmtDuration(sec) {
+  if (sec < 60) return sec + 's';
+  if (sec < 3600) return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+  return Math.floor(sec / 3600) + 'h ' + Math.floor((sec % 3600) / 60) + 'm';
+}
+function isLong(txt) {
+  const ls = String(txt || '').split('\n');
+  return ls.length > 2 || ls.some(l => l.length > LONG_LINE);
+}
 
 /* ---------- progress / rows ---------- */
 function translatable() { return S.entries.filter(e => e.lines.length).length; }
@@ -629,45 +943,91 @@ function badIds() {
   S.entries.forEach((e, i) => { if (S.tr[i + 1] && hasForeignScript(S.tr[i + 1])) r.push(i + 1); });
   return r;
 }
-function scanBad() {
+function longCount() {
+  let n = 0;
+  S.entries.forEach((e, i) => { if (S.tr[i + 1] && isLong(S.tr[i + 1])) n++; });
+  return n;
+}
+async function scanBad() {
   const bad = badIds();
   if (!bad.length) { setStatus('scan.none', null, 'ok'); return; }
-  if (!confirm(t('scan.confirm', { n: bad.length }))) return;
+  if (!(await ask(t('scan.confirm', { n: bad.length }), 'scan.ok'))) return;
   bad.forEach(id => { delete S.tr[id]; setRow(id); });
-  save(); updateProgress();
+  save(); updateProgress(); applyFilter();
   setStatus('scan.done', { n: bad.length }, 'ok');
+}
+function etaText() {
+  if (!S.running || !S.t0) return '–';
+  const done = doneCount() - S.d0;
+  if (done <= 0) return '…';
+  const left = S.runIds.filter(id => !S.tr[id]).length;
+  return fmtDuration(Math.round(((Date.now() - S.t0) / done) * left / 1000));
 }
 function updateProgress() {
   const t0 = translatable(), d = doneCount();
   const pct = t0 ? Math.round(d / t0 * 100) : 0;
+  const bad = badIds().length;
   $('bar').style.width = pct + '%';
   $('barWrap').setAttribute('aria-valuenow', pct);
-  $('count').textContent = d + ' / ' + t0 + ' lines';
+  $('nowPct').textContent = pct + '%';
+  $('stDone').textContent = d + ' / ' + t0;
+  $('stLeft').textContent = t0 - d;
+  $('stBad').textContent = bad;
+  $('stEta').textContent = etaText();
+  $('cAll').textContent = t0;
+  $('cTodo').textContent = t0 - d;
+  $('cBad').textContent = bad;
+  $('cLong').textContent = longCount();
   const has = S.entries.length > 0;
   $('start').disabled = !has || S.running;
   $('download').disabled = !has;
   $('clear').disabled = !has || S.running;
   $('scan').disabled = !has || S.running;
+  S.rows.forEach(r => { r.rt.disabled = S.running; });
   $('start').textContent = t(d === 0 ? 'run.start.new' : (d < t0 ? 'run.start.resume' : 'run.start.again'));
   renderFile();
 }
 function setBusy(b) {
   S.running = b;
   $('stop').disabled = !b;
+  document.body.setAttribute('aria-busy', String(b));
   updateProgress();
+}
+function paintRow(id) {
+  const r = S.rows[id - 1];
+  if (!r) return;
+  const v = S.tr[id];
+  r.row.classList.toggle('todo', !v && S.entries[id - 1].lines.length > 0);
+  r.row.classList.toggle('bad', !!v && hasForeignScript(v));
+  r.tag.hidden = !(v && isLong(v));
 }
 function setRow(id) {
   const r = S.rows[id - 1];
   if (!r) return;
   r.ta.value = S.tr[id] || '';
-  r.row.classList.toggle('todo', !S.tr[id] && S.entries[id - 1].lines.length > 0);
-  r.row.classList.toggle('bad', !!S.tr[id] && hasForeignScript(S.tr[id]));
+  paintRow(id);
 }
 function scheduleSave() {
   clearTimeout(S.saveTimer);
   S.saveTimer = setTimeout(save, 400);
 }
 function save() { if (S.fp) store.set(S.fp, JSON.stringify(S.tr)); }
+
+function applyFilter() {
+  const q = $('q').value.trim().toLowerCase(), f = S.filter;
+  let shown = 0;
+  S.rows.forEach((r, i) => {
+    const id = i + 1, e = S.entries[i], v = S.tr[id];
+    let ok = true;
+    if (f === 'todo') ok = !v && e.lines.length > 0;
+    else if (f === 'bad') ok = !!v && hasForeignScript(v);
+    else if (f === 'long') ok = !!v && isLong(v);
+    if (ok && q) ok = (e.lines.join(' ') + ' ' + (v || '')).toLowerCase().indexOf(q) !== -1;
+    r.row.hidden = !ok;
+    if (ok) shown++;
+  });
+  $('rowsEmpty').hidden = shown > 0 || !S.entries.length;
+}
 
 function renderRows() {
   const box = $('rows');
@@ -676,39 +1036,63 @@ function renderRows() {
   const frag = document.createDocumentFragment();
   S.entries.forEach((e, i) => {
     const id = i + 1;
-    const row = document.createElement('div'); row.className = 'row';
-    const meta = document.createElement('div'); meta.className = 'meta';
+    const row = el('div', 'row');
+    const src = el('div', 'src');
+    const meta = el('div', 'meta');
     meta.textContent = id + '   ' + e.time.split('-->')[0].trim();
-    const en = document.createElement('div'); en.className = 'en'; en.textContent = e.lines.join('\n');
-    row.appendChild(meta); row.appendChild(en);
-    const ta = document.createElement('textarea');
+    const en = el('div', 'en'); en.textContent = e.lines.join('\n');
+    src.appendChild(meta); src.appendChild(en);
+    row.appendChild(src);
+
+    const ta = el('textarea');
     ta.rows = 2; ta.lang = 'si';
     ta.setAttribute('aria-label', t('row.aria', { id: id }));
+    const tag = el('span', 'tag'); tag.textContent = t('row.long'); tag.hidden = true;
+    const rt = el('button', 'linkbtn'); rt.type = 'button';
+    rt.textContent = t('row.redo');
+    rt.setAttribute('aria-label', t('row.redo.aria', { id: id }));
+    rt.addEventListener('click', () => retranslate(id));
+    S.rows.push({ row, ta, tag, rt });
+
     if (e.lines.length) {
+      const dst = el('div', 'dst');
+      const acts = el('div', 'acts');
       ta.value = S.tr[id] || '';
       ta.placeholder = t('row.ph');
-      if (!S.tr[id]) row.classList.add('todo');
-      if (S.tr[id] && hasForeignScript(S.tr[id])) row.classList.add('bad');
+      ta.addEventListener('focus', () => showNow(id));
       ta.addEventListener('input', () => {
         if (ta.value.trim()) S.tr[id] = ta.value; else delete S.tr[id];
-        row.classList.toggle('todo', !S.tr[id]);
-        row.classList.toggle('bad', !!S.tr[id] && hasForeignScript(S.tr[id]));
+        paintRow(id); showNow(id);
         scheduleSave(); updateProgress();
       });
-      row.appendChild(ta);
+      acts.appendChild(tag); acts.appendChild(rt);
+      dst.appendChild(ta); dst.appendChild(acts);
+      row.appendChild(dst);
+      paintRow(id);
     }
-    S.rows.push({ row, ta });
     frag.appendChild(row);
   });
   box.appendChild(frag);
   $('s-review').hidden = !S.entries.length;
+  applyFilter();
 }
 
+function resetNow() {
+  S.now = null;
+  $('now').classList.add('empty');
+  $('nowTime').textContent = '';
+  $('nowEn').textContent = '';
+  $('nowText').textContent = t('screen.empty');
+}
 function showNow(id) {
-  if (!S.tr[id]) return;
-  $('now').hidden = false;
-  $('nowTime').textContent = id + '   ' + S.entries[id - 1].time.split('-->')[0].trim();
-  $('nowText').textContent = S.tr[id];
+  const e = S.entries[id - 1];
+  if (!e) return;
+  S.now = id;
+  const tx = S.tr[id] || '';
+  $('now').classList.toggle('empty', !tx);
+  $('nowTime').textContent = id + '   ' + e.time.split('-->')[0].trim();
+  $('nowEn').textContent = e.lines.join('\n');
+  $('nowText').textContent = tx || t('row.ph');
 }
 
 /* ---------- file ---------- */
@@ -722,7 +1106,7 @@ async function handleFile(file) {
   S.entries = entries; S.fileName = file.name;
   S.fp = 'srt2si:p:' + hashStr(file.name + '|' + entries.length + '|' + entries.map(e => e.lines.join('/')).join('\n'));
   try { S.tr = JSON.parse(store.get(S.fp, '{}')) || {}; } catch (e) { S.tr = {}; }
-  $('now').hidden = true;
+  resetNow();
   setStatus(null);
   renderRows(); updateProgress();
 }
@@ -834,7 +1218,7 @@ async function translatePart(ids, attempt) {
   }
   if (foreign) log(t('log.foreign', { n: foreign }));
   if (last) showNow(last);
-  save(); updateProgress();
+  save(); updateProgress(); applyFilter();
   if (n < ids.length) log(t('log.missing', { n: ids.length - n, why: (r.finish && r.finish !== 'STOP') ? ' (' + r.finish + ')' : '' }));
   return n;
 }
@@ -849,7 +1233,8 @@ async function translateBatch(ids) {
   if (pending.length) log(t('log.failed', { n: pending.length }));
 }
 
-async function start() {
+// run(null) translates every remaining line; run([ids]) translates only those lines
+async function run(only) {
   if (S.running) return;
   if (!$('apiKey').value.trim()) { setStatus('run.needKey', null, 'err'); $('apiKey').focus(); return; }
   if (!S.entries.length) { setStatus('run.needFile', null, 'err'); return; }
@@ -858,13 +1243,14 @@ async function start() {
     const ok = await loadModels();
     if (!ok || !$('model').value.trim()) { setStatus('run.nomodel', null, 'err'); return; }
   }
-  const todo = todoIds();
+  const todo = only || todoIds();
   if (!todo.length) { setStatus('run.alldone', null, 'ok'); return; }
   const size = Math.min(300, Math.max(10, parseInt($('chunkSize').value, 10) || 100));
-  S.stop = false; setBusy(true);
+  S.stop = false; S.runIds = todo.slice(); S.t0 = Date.now(); S.d0 = doneCount();
+  setBusy(true);
   try {
     for (const batch of chunkArray(todo, size)) await translateBatch(batch);
-    const left = todoIds().length;
+    const left = only ? only.filter(id => !S.tr[id]).length : todoIds().length;
     if (!left) setStatus('run.finished', null, 'ok');
     else setStatus('run.left', { n: left }, 'err');
   } catch (e) {
@@ -876,7 +1262,20 @@ async function start() {
     else setStatus('run.error', { msg: e.message }, 'err');
     log('Stopped: ' + e.message);
   } finally {
-    save(); setBusy(false);
+    save(); setBusy(false); applyFilter();
+  }
+}
+function start() { return run(null); }
+
+async function retranslate(id) {
+  if (S.running) return;
+  if (!$('apiKey').value.trim()) { setStatus('run.needKey', null, 'err'); $('apiKey').focus(); return; }
+  const prev = S.tr[id];
+  delete S.tr[id]; setRow(id); save(); updateProgress();
+  await run([id]);
+  if (!S.tr[id] && prev) {
+    S.tr[id] = prev; setRow(id); save(); updateProgress();
+    setStatus('row.kept', null, 'err');
   }
 }
 
@@ -885,9 +1284,9 @@ function stop() {
   if (S.abort) S.abort.abort();
 }
 
-function download() {
+async function download() {
   const total = translatable(), d = doneCount();
-  if (d < total && !confirm(t('dl.confirm', { n: total - d }))) return;
+  if (d < total && !(await ask(t('dl.confirm', { n: total - d }), 'dl.ok'))) return;
   const srt = buildSRT(S.entries, S.tr).replace(/\n/g, '\r\n');
   const blob = new Blob(['\uFEFF' + srt], { type: 'application/x-subrip;charset=utf-8' });
   const a = document.createElement('a');
@@ -897,18 +1296,23 @@ function download() {
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
 }
 
-function clearProgress() {
-  if (!S.entries.length || !confirm(t('clear.confirm'))) return;
+async function clearProgress() {
+  if (!S.entries.length || !(await ask(t('clear.confirm'), 'clear.ok'))) return;
   S.tr = {}; store.del(S.fp);
-  $('now').hidden = true; setStatus(null);
+  resetNow(); setStatus(null);
   renderRows(); updateProgress();
 }
 
 /* ---------- wiring ---------- */
 loadSettings();
+if (window.matchMedia && window.matchMedia('(max-width:899px)').matches) {
+  $('s-ctx').open = false;
+  if ($('apiKey').value.trim()) $('s-key').open = false; // remembered key: less scrolling on phones
+}
 [...FIELDS, 'mixEn', 'remember', 'apiKey', 'model'].forEach(f => $(f).addEventListener('input', saveSettings));
 $('model').addEventListener('change', saveSettings);
 document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+$('themeBtn').addEventListener('click', cycleTheme);
 $('toggleKey').addEventListener('click', () => {
   const k = $('apiKey');
   k.type = k.type === 'password' ? 'text' : 'password';
@@ -925,8 +1329,15 @@ $('stop').addEventListener('click', stop);
 $('download').addEventListener('click', download);
 $('clear').addEventListener('click', clearProgress);
 $('scan').addEventListener('click', scanBad);
+$('q').addEventListener('input', applyFilter);
+document.querySelectorAll('.filters button').forEach(b => b.addEventListener('click', () => {
+  S.filter = b.dataset.f;
+  document.querySelectorAll('.filters button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  applyFilter();
+}));
 window.addEventListener('beforeunload', save);
 applyLang();
+if ($('apiKey').value.trim()) loadModels(); // a remembered key: have the model list ready
 </script>
 </body>
 </html>
