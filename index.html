@@ -552,15 +552,23 @@ function buildSystemPrompt(c) {
     '6. Carry over emotional emphasis from the English (CAPS, "!", "...", "?!", repeated words) using natural Sinhala means — emphatic particles (ම, නේ, ද, ලු), word order, or punctuation — not by adding new content.',
     '7. Keep each subtitle short: about 42 characters per line at most, and at most 2 lines. Use " / " to mark a line break.',
     '8. Never leave a line empty. Translate sound cues like [door slams] or (laughs) briefly, inside the same brackets.',
-    '9. Swearing: match the intensity of the original. Do not sanitize it and do not exaggerate it.',
+    '9. Swearing and insults: match BOTH the intensity and the function of the original — an insult must stay an insult, a threat must stay a threat, dismissal must stay dismissal. Do not substitute a phrase that changes what kind of statement it is (e.g. an insult must not become a threat of violence). Do not sanitize it and do not exaggerate it.',
     '10. Keep HTML tags such as <i></i>, speaker dashes "-" and music symbols exactly as in the original.',
     '11. Write ONLY in Sinhala script, English (Latin) letters, digits and normal punctuation. NEVER output characters from any other script (no Tamil, Bengali, Hindi, Arabic, Burmese, Thai, Korean, Chinese, Japanese).',
+    '12. Common English loanwords (alarm, phone, plan, computer, etc.) must be spelled consistently every time they appear — either always as standard Sinhala transliteration (e.g. අලාරම්) or always in English letters per the mix rule above. Never mix spellings of the same word within the file.',
+    '13. SENTENCE CONTINUITY: some consecutive lines are fragments of ONE spoken sentence split across subtitle cards (this is normal in subtitles). Read the PREVIOUS LINES and any earlier lines in this same batch together with the current one to find the full sentence before translating. If a line is clearly a fragment (no capital letter start, ends mid-thought, continues a sentence from the line before), translate it as a fragment that reads naturally as a continuation — do NOT guess a full, standalone sentence out of it.',
     '',
-    'EXAMPLE (shows the required balance of natural feel + exact meaning):',
+    'EXAMPLE 1 (meaning fidelity — negation/question):',
     'Input:  501|I\'ve never been on one before.',
     'Bad (meaning flipped into a question, negation lost): 501|මම කවදාහරි ගිහින්ම තියෙනවද ඉතින්?',
     'Bad (too bookish/literal): 501|මම මීට පෙර එවැන්නක නොසිට ඇත.',
     'Good (natural, spoken, negation kept): 501|මම කවදාවත් එකක ගිහින් නෑ.',
+    '',
+    'EXAMPLE 2 (sentence continuity across lines):',
+    'Input:  426|Yeah, I heard we were taking',
+    'Input:  427|a swing at F Corp today, B-Moc.',
+    'Bad (427 translated as a standalone sentence, meaning lost): 427|අහුවා මම.',
+    'Good (427 continues 426\'s sentence naturally): 426|ඔව්, ඇහුණා අපි අද F Corp එකට ගහනවා කියලා / 427|B-Moc.',
     '',
     'FORMAT RULES (very important):',
     '- Each input line looks like: number|English text   (" / " marks a line break inside one subtitle).',
@@ -600,6 +608,40 @@ function hasForeignScript(t) {
 function chunkArray(arr, n) {
   const out = [];
   for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  return out;
+}
+
+// Heuristic: does entry `id` look like it continues the spoken sentence of entry `id-1`?
+// (previous line doesn't end with sentence punctuation, and this line doesn't start with a capital)
+function looksLikeContinuation(entries, id) {
+  if (id < 2) return false;
+  const prevE = entries[id - 2], curE = entries[id - 1];
+  if (!prevE || !curE || !prevE.lines.length || !curE.lines.length) return false;
+  const prevText = prevE.lines.join(' ').replace(/<[^>]+>/g, '').trim();
+  const curText = curE.lines.join(' ').replace(/<[^>]+>/g, '').trim().replace(/^[-\u2013\u2014"'(\[]+/, '');
+  if (!prevText || !curText) return false;
+  const endsWithTerminator = /[.!?\u2026"'\)\]]\s*$/.test(prevText);
+  const startsLower = /^[a-z]/.test(curText);
+  return !endsWithTerminator && startsLower;
+}
+
+// Like chunkArray, but avoids cutting an API-call boundary in the middle of a split sentence:
+// if the line right after a proposed chunk boundary looks like a continuation of the chunk's
+// last line, pull it (and up to a few more) into the same chunk so the model sees the full sentence.
+function chunkArraySmart(ids, n, entries) {
+  const out = [];
+  let i = 0;
+  while (i < ids.length) {
+    let end = Math.min(i + n, ids.length);
+    let extended = 0;
+    while (end < ids.length && extended < 5) {
+      const lastId = ids[end - 1], nextId = ids[end];
+      if (nextId === lastId + 1 && looksLikeContinuation(entries, nextId)) { end++; extended++; }
+      else break;
+    }
+    out.push(ids.slice(i, end));
+    i = end;
+  }
   return out;
 }
 
@@ -1634,7 +1676,7 @@ async function run(only) {
   S.runKey = $('apiKey').value.trim(); S.runModel = $('model').value.trim();
   setBusy(true);
   try {
-    for (const batch of chunkArray(todo, size)) await translateBatch(batch);
+    for (const batch of chunkArraySmart(todo, size, S.entries)) await translateBatch(batch);
     const left = only ? only.filter(id => !S.tr[id]).length : todoIds().length;
     if (!left) setStatus('run.finished', null, 'ok');
     else setStatus('run.left', { n: left }, 'err');
