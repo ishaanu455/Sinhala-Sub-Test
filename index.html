@@ -211,20 +211,47 @@ details.log ul{margin:8px 0 0; padding-left:18px; max-height:180px; overflow:aut
 .toolbar{display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:16px}
 .toolbar input[type=search]{flex:1 1 200px; min-width:0}
 .filters{overflow-x:auto}
+.viewtoggle{display:none}
 .rows{margin-top:14px}
+.rows-head{display:none}
 .row{
   display:grid; grid-template-columns:minmax(0,1fr); gap:8px 24px;
   padding:14px 0 14px 14px; border-bottom:1px solid var(--line); border-left:3px solid transparent;
+  animation:rowIn .32s ease both;
 }
+@keyframes rowIn{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
 @media (min-width:720px){.row{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}}
+@media (min-width:900px){
+  /* split-screen review: toggle between English-above/Sinhala-below and a true two-column layout */
+  .viewtoggle{display:inline-flex}
+  .rows.split .rows-head{
+    display:grid; grid-template-columns:minmax(0,5fr) minmax(0,6fr); gap:8px 24px;
+    padding:0 0 10px 14px; margin-bottom:2px; border-bottom:1px solid var(--line);
+  }
+  .rows.split .rows-head span{font-size:.76rem; font-weight:700; letter-spacing:.03em; color:var(--muted); text-transform:uppercase}
+  .rows.split .row{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}
+  .rows.stack .row{grid-template-columns:minmax(0,1fr)}
+  .rows.stack .rows-head{display:none}
+}
 .row.todo{border-left-color:var(--todo)}
 .row.bad{border-left-color:var(--err)}
 .meta{font:.78rem/1.5 ui-monospace,Menlo,Consolas,monospace; color:var(--muted)}
 .en{color:var(--muted); font-size:.92rem; white-space:pre-line; margin:2px 0 0}
-.row textarea{min-height:2.9em; field-sizing:content; resize:vertical}
+.row textarea{min-height:2.9em; field-sizing:content; resize:vertical; transition:border-color .15s,box-shadow .15s}
+.row textarea:focus{border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)}
 .acts{display:flex; align-items:center; gap:14px; min-height:34px}
 .tag{font-size:.75rem; line-height:1.4; padding:1px 8px; border:1px solid var(--todo); color:var(--todo); border-radius:999px}
 .rowsempty{color:var(--muted); padding:18px 0}
+@media (prefers-reduced-motion: reduce){.row{animation:none}}
+
+/* small ui-friendliness touches */
+.msg[data-kind]{animation:msgIn .25s ease both}
+@keyframes msgIn{from{opacity:0; transform:translateY(-3px)} to{opacity:1; transform:none}}
+.btn{transition:transform .1s,border-color .15s,filter .15s}
+.btn:active:not(:disabled){transform:scale(.97)}
+select.flash{animation:selFlash 1s ease}
+@keyframes selFlash{0%{box-shadow:0 0 0 0 transparent} 25%{box-shadow:0 0 0 3px color-mix(in srgb, var(--ok) 35%, transparent)} 100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion: reduce){.msg[data-kind],select.flash,.btn:active:not(:disabled){animation:none; transform:none}}
 
 /* usage + saved keys */
 .usage h3{font-size:1rem; line-height:1.5; margin:24px 0 6px; font-weight:700}
@@ -431,9 +458,14 @@ dialog .actions{justify-content:flex-end; margin-top:18px}
           <button type="button" data-f="bad" aria-pressed="false"><span data-i18n="filter.bad"></span><span class="cnt" id="cBad"></span></button>
           <button type="button" data-f="long" aria-pressed="false"><span data-i18n="filter.long"></span><span class="cnt" id="cLong"></span></button>
         </div>
+        <div class="seg viewtoggle" role="group" aria-label="View">
+          <button type="button" id="viewStack" data-i18n="view.stack" aria-pressed="false"></button>
+          <button type="button" id="viewSplit" data-i18n="view.split" aria-pressed="true"></button>
+        </div>
         <button class="btn" id="scan" type="button" data-i18n="review.scan"></button>
       </div>
-      <div class="rows" id="rows"></div>
+      <div class="rows-head" id="rowsHead" aria-hidden="true"><span data-i18n="review.col.en"></span><span data-i18n="review.col.si"></span></div>
+      <div class="rows split" id="rows"></div>
       <p class="rowsempty" id="rowsEmpty" hidden data-i18n="review.empty"></p>
     </section>
   </main>
@@ -690,6 +722,7 @@ const I18N = {
     'film.save.label': 'මේ විස්තර film නමකින් save කරන්න',
     'film.save.ph': 'උදා: Reply 1988',
     'film.save': 'Save කරන්න',
+    'film.update': 'Update කරන්න',
     'film.msg.needname': 'Save කරන්න කලින් film එකට නමක් දෙන්න.',
     'film.msg.saved': '"{name}" විදිහට save කළා.',
     'film.msg.updated': '"{name}" update කළා.',
@@ -745,6 +778,10 @@ const I18N = {
     'review.h2': 'ප්‍රතිඵලය බලන්න, අවශ්‍ය නම් edit කරන්න',
     'review.legend': 'කහ ඉරක් තියෙන lines තවම පරිවර්තනය වෙලා නෑ. Download කළාම ඒවා English එහෙමම යනවා. රතු ඉරක් තියෙන lines වල වෙනත් භාෂාවල අකුරු තියෙනවා.',
     'review.scan': 'වැරදි අකුරු තියෙන lines හොයන්න',
+    'view.stack': '⬍ එකට එක',
+    'view.split': '⬌ පැති දෙකට',
+    'review.col.en': 'English',
+    'review.col.si': 'සිංහල',
     'scan.none': '✓ වෙනත් භාෂාවල අකුරු තියෙන lines නෑ.',
     'scan.confirm': 'වෙනත් භාෂාවල අකුරු මිශ්‍ර වෙලා තියෙන lines {n}ක් හම්බුණා. ඒවා ඉවත් කරලා ආයේ පරිවර්තනය කරන්න සූදානම් කරන්නද? (අනිත් lines වලට කිසිවක් වෙන්නේ නෑ)',
     'scan.done': 'Lines {n}ක් ඉවත් කළා. දැන් "ඉතුරු ටික පරිවර්තනය කරන්න" ඔබන්න. ඒ lines විතරක් ආයේ යවනවා.',
@@ -788,6 +825,7 @@ const I18N = {
     'film.save.label': 'Save these details under a film name',
     'film.save.ph': 'e.g. Reply 1988',
     'film.save': 'Save',
+    'film.update': 'Update',
     'film.msg.needname': 'Give the film a name before saving.',
     'film.msg.saved': 'Saved "{name}".',
     'film.msg.updated': 'Updated "{name}".',
@@ -843,6 +881,10 @@ const I18N = {
     'review.h2': 'Review and edit the result',
     'review.legend': 'Lines with a yellow bar are not translated yet; they stay in English when you download. Lines with a red bar contain characters from other scripts.',
     'review.scan': 'Find lines with wrong characters',
+    'view.stack': '⬍ Stacked',
+    'view.split': '⬌ Side-by-side',
+    'review.col.en': 'English',
+    'review.col.si': 'Sinhala',
     'scan.none': '✓ No lines with characters from other scripts.',
     'scan.confirm': 'Found {n} lines mixed with characters from other scripts. Remove them so they can be translated again? (Other lines are not touched.)',
     'scan.done': 'Removed {n} lines. Now press "Translate the remaining lines". Only those lines are sent again.',
@@ -1032,7 +1074,7 @@ const LONG_LINE = 48;
 const S = {
   entries: [], tr: {}, fileName: '', badFile: null, fp: '', running: false, stop: false, abort: null,
   rows: [], lastReq: 0, saveTimer: null, modelNames: [], st: null, km: null,
-  now: null, filter: 'all', t0: 0, d0: 0, runIds: [], runKey: '', runModel: '', kmsg: null
+  now: null, filter: 'all', t0: 0, d0: 0, runIds: [], runKey: '', runModel: '', kmsg: null, view: 'split'
 };
 let KEYS = [], USAGE = {}, TEST = {};
 let FILMS = [];
@@ -1104,6 +1146,18 @@ function onFilmSelectChange() {
   $('filmDelete').disabled = !sel.value;
   $('filmLoad').disabled = !sel.value;
   setFilmMsg(null);
+  updateFilmSaveBtn();
+}
+function updateFilmSaveBtn() {
+  const name = $('filmSaveName').value.trim();
+  const exists = name && findFilm(name);
+  $('filmSave').textContent = t(exists ? 'film.update' : 'film.save');
+  $('filmSave').disabled = !name;
+}
+function flashSelect() {
+  const sel = $('filmSelect');
+  sel.classList.remove('flash'); void sel.offsetWidth; // restart the animation even on repeat saves
+  sel.classList.add('flash');
 }
 async function saveFilmAs() {
   const name = $('filmSaveName').value.trim();
@@ -1120,6 +1174,8 @@ async function saveFilmAs() {
     FILMS.push(f); saveFilms(); renderFilmSelect(); $('filmSelect').value = f.id;
     setFilmMsg('film.msg.saved', { name: f.name }, 'ok');
   }
+  flashSelect();
+  updateFilmSaveBtn();
 }
 function loadSelectedFilm() {
   const sel = $('filmSelect'), f = FILMS.filter(x => x.id === sel.value)[0];
@@ -1295,7 +1351,7 @@ function applyLang() {
     r.rt.textContent = t('row.redo');
     r.rt.setAttribute('aria-label', t('row.redo.aria', { id: i + 1 }));
   });
-  renderModelOptions(); renderStatus(); renderKeyMsg(); renderKeysMsg(); renderFilmSelect(); updateSummaries(); applyTheme(); renderUsage();
+  renderModelOptions(); renderStatus(); renderKeyMsg(); renderKeysMsg(); renderFilmSelect(); updateFilmSaveBtn(); updateSummaries(); applyTheme(); renderUsage();
   if (S.now) showNow(S.now); else resetNow();
   updateProgress();
 }
@@ -1303,6 +1359,17 @@ function setLang(l) {
   LANG = l;
   store.set('srt2si:lang', l);
   applyLang();
+}
+
+/* ---------- review layout: stacked (English above, Sinhala below) vs split (side-by-side columns) ---------- */
+function setView(v) {
+  S.view = (v === 'stack') ? 'stack' : 'split';
+  const box = $('rows');
+  box.classList.toggle('split', S.view === 'split');
+  box.classList.toggle('stack', S.view === 'stack');
+  $('viewStack').setAttribute('aria-pressed', String(S.view === 'stack'));
+  $('viewSplit').setAttribute('aria-pressed', String(S.view === 'split'));
+  store.set('srt2si:view', S.view);
 }
 
 /* ---------- confirm dialog ---------- */
@@ -1937,6 +2004,9 @@ if (window.matchMedia && window.matchMedia('(max-width:899px)').matches) {
 $('model').addEventListener('change', saveSettings);
 document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
 $('themeBtn').addEventListener('click', cycleTheme);
+$('viewStack').addEventListener('click', () => setView('stack'));
+$('viewSplit').addEventListener('click', () => setView('split'));
+setView(store.get('srt2si:view', 'split'));
 $('toggleKey').addEventListener('click', () => {
   const k = $('apiKey');
   k.type = k.type === 'password' ? 'text' : 'password';
@@ -1963,6 +2033,7 @@ $('filmLoad').addEventListener('click', loadSelectedFilm);
 $('filmDelete').addEventListener('click', deleteSelectedFilm);
 $('filmSave').addEventListener('click', saveFilmAs);
 $('filmSaveName').addEventListener('keydown', e => { if (e.key === 'Enter') saveFilmAs(); });
+$('filmSaveName').addEventListener('input', updateFilmSaveBtn);
 setInterval(renderUsage, 30000); // keeps the reset countdown fresh, and notices when the Pacific day changes
 document.querySelectorAll('.filters button').forEach(b => b.addEventListener('click', () => {
   S.filter = b.dataset.f;
